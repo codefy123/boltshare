@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FlashShare | Ludicrous Speed</title>
+    <title>FlashShare | Pro</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -11,146 +11,147 @@
     <script src="https://cdn.jsdelivr.net/npm/streamsaver@2.0.6/StreamSaver.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/web-streams-polyfill@2.0.2/dist/polyfill.min.js"></script>
 
-    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        :root { --bg: #000000; --panel: #0a0a0a; --primary: #00ff9d; --err: #ff0055; }
-        body { font-family: 'Chakra Petch', sans-serif; background: var(--bg); color: #e0e0e0; height: 100vh; overflow: hidden; }
-        .font-mono { font-family: 'JetBrains Mono', monospace; }
-
-        /* Performance UI */
-        .glass { background: rgba(20, 20, 20, 0.9); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); }
-        .view { position: absolute; inset: 0; display: flex; flex-direction: column; transition: opacity 0.3s; padding: 20px; }
-        .hidden-view { opacity: 0; pointer-events: none; z-index: -1; }
-
-        /* Speed Bars */
-        .bar-container { background: #1a1a1a; height: 4px; width: 100%; position: relative; overflow: hidden; }
-        .bar-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.5s linear; box-shadow: 0 0 10px var(--primary); }
+        :root { --bg: #0f172a; --card: #1e293b; --primary: #3b82f6; --danger: #ef4444; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: #f8fafc; height: 100vh; overflow: hidden; }
         
-        /* Toast */
-        .toast { animation: slideUp 0.3s ease-out; }
-        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        /* Smooth View Transitions */
+        .view { position: absolute; inset: 0; transition: opacity 0.3s ease; display: flex; flex-direction: column; padding: 24px; }
+        .hidden-view { opacity: 0; pointer-events: none; z-index: -1; }
+        
+        /* Glass Effect */
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
+        
+        /* Progress Bar Animation */
+        .progress-bar { transition: width 0.3s linear; }
+        
+        /* Toast Notification */
+        .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 50; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .toast { pointer-events: auto; background: #334155; color: white; padding: 10px 16px; rounded-lg; font-size: 14px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.3); animation: slideIn 0.3s ease-out; display: flex; items-center; gap: 8px; }
+        @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <div id="toast-area" class="fixed bottom-6 left-0 w-full z-50 flex flex-col items-center gap-2 pointer-events-none"></div>
+    <div id="toast-container" class="toast-container"></div>
 
     <section id="view-connect" class="view justify-center items-center z-20">
-        <div class="w-full max-w-sm space-y-8">
+        <div class="w-full max-w-sm space-y-6">
             <div class="text-center">
-                <h1 class="text-4xl font-bold text-white tracking-tighter mb-2 italic">FLASHSHARE <span class="text-[#00ff9d]">MAX</span></h1>
-                <p class="text-xs font-mono text-gray-500">ENGINE: LUDICROUS MODE (512KB)</p>
+                <div class="inline-block p-3 bg-blue-500/10 rounded-full mb-4">
+                    <i data-lucide="zap" class="w-8 h-8 text-blue-500"></i>
+                </div>
+                <h1 class="text-3xl font-bold tracking-tight">FlashShare</h1>
+                <p class="text-slate-400 text-sm mt-1">Local High-Speed Transfer</p>
             </div>
 
-            <div class="glass rounded-none p-8 border-l-4 border-[#00ff9d] space-y-6">
-                <div class="cursor-pointer group" onclick="copyId()">
-                    <p class="text-[10px] font-mono text-gray-500 mb-1">THIS DEVICE ID</p>
-                    <div class="flex items-center justify-between bg-black p-3 border border-gray-800 hover:border-[#00ff9d] transition-colors">
-                        <span id="my-id" class="text-3xl font-mono font-bold text-white tracking-widest">...</span>
-                        <i data-lucide="copy" class="w-4 h-4 text-gray-600 group-hover:text-[#00ff9d]"></i>
+            <div class="glass rounded-xl p-6 space-y-5">
+                <div onclick="copyId()" class="bg-slate-900/50 border border-slate-700/50 rounded-lg p-4 text-center cursor-pointer hover:border-blue-500/50 transition-colors group">
+                    <p class="text-[10px] uppercase font-bold text-slate-500 mb-1 tracking-wider">Your Device ID</p>
+                    <div class="flex items-center justify-center gap-2">
+                        <span id="my-id" class="text-2xl font-mono font-bold tracking-widest text-white group-hover:text-blue-400">...</span>
+                        <i data-lucide="copy" class="w-4 h-4 text-slate-600"></i>
                     </div>
                 </div>
 
-                <div class="space-y-4">
-                    <input type="tel" id="partner-id" maxlength="4" placeholder="PARTNER ID" 
-                        class="w-full bg-black border border-gray-800 focus:border-[#00ff9d] text-white text-center text-2xl font-mono font-bold py-4 outline-none transition-all placeholder:text-gray-800">
+                <div class="space-y-3">
+                    <input type="tel" id="partner-id" maxlength="4" placeholder="Enter Partner ID" 
+                        class="w-full bg-slate-800 border border-slate-700 focus:border-blue-500 text-white text-center text-xl font-mono font-bold py-3 rounded-lg outline-none transition-all placeholder:text-slate-600">
                     
-                    <button onclick="connect()" id="btn-conn" class="w-full bg-[#00ff9d] hover:bg-[#00cc7d] text-black font-bold py-4 text-lg active:scale-[0.98] transition-all">
-                        INITIATE LINK
+                    <button onclick="connect()" id="btn-connect" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-lg transition-transform active:scale-[0.98] shadow-lg shadow-blue-600/20">
+                        Connect Devices
                     </button>
                 </div>
             </div>
-            
-            <div class="text-center">
-                <p class="text-[10px] text-gray-500 font-mono" id="net-status">NETWORK: WAITING...</p>
-            </div>
         </div>
     </section>
 
-    <section id="view-dash" class="view hidden-view z-10">
-        <header class="flex justify-between items-end mb-8 border-b border-gray-800 pb-4">
-            <div>
-                <h2 class="text-xl font-bold italic tracking-tighter">CONNECTED</h2>
-                <div class="flex items-center gap-2 mt-1">
-                    <div class="w-2 h-2 bg-[#00ff9d] rounded-full animate-pulse"></div>
-                    <p class="text-[10px] font-mono text-[#00ff9d]">DIRECT P2P ENCRYPTED</p>
+    <section id="view-dashboard" class="view hidden-view z-10">
+        <header class="flex justify-between items-center mb-6">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
+                    <i data-lucide="link" class="w-5 h-5 text-emerald-400"></i>
+                </div>
+                <div>
+                    <h2 class="text-sm font-bold text-white">Connected</h2>
+                    <p class="text-xs text-slate-400" id="connection-status">Secure P2P Link</p>
                 </div>
             </div>
-            <button onclick="endSession()" class="text-xs font-mono text-red-500 hover:text-red-400 border border-red-900/50 px-3 py-1 bg-red-950/20">
-                ABORT
+            <button onclick="disconnect()" class="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors">
+                <i data-lucide="log-out" class="w-5 h-5"></i>
             </button>
         </header>
 
-        <div class="mb-8">
-            <div class="flex justify-between items-end mb-2">
-                <span class="text-xs font-mono text-gray-500">THROUGHPUT</span>
-                <span id="status-badge" class="text-[10px] bg-gray-800 text-gray-400 px-2 py-0.5 font-bold">IDLE</span>
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="glass p-4 rounded-xl">
+                <p class="text-[10px] text-slate-500 font-bold uppercase">Queue</p>
+                <p class="text-xl font-bold text-white mt-1" id="queue-count">0</p>
             </div>
-            <div class="text-6xl font-mono font-bold text-white tracking-tighter" id="speed-meter">
-                0.0 <span class="text-lg text-gray-600">MB/s</span>
-            </div>
-        </div>
-
-        <div class="relative group mb-6">
-            <input type="file" id="file-input" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" multiple onchange="handleFiles(this)">
-            <div class="border-2 border-dashed border-gray-800 group-hover:border-[#00ff9d] h-24 flex items-center justify-center gap-4 transition-all bg-gray-900/20">
-                <i data-lucide="plus-square" class="w-6 h-6 text-gray-500 group-hover:text-[#00ff9d]"></i>
-                <span class="text-sm font-bold text-gray-400 group-hover:text-white">ADD FILES TO QUEUE</span>
+            <div class="glass p-4 rounded-xl">
+                <p class="text-[10px] text-slate-500 font-bold uppercase">Speed</p>
+                <p class="text-xl font-bold text-blue-400 mt-1" id="speed-meter">0.0 MB/s</p>
             </div>
         </div>
 
-        <div class="flex-1 overflow-hidden flex flex-col">
-            <div class="flex justify-between items-center mb-2 px-1">
-                <span class="text-[10px] font-mono text-gray-500">QUEUE</span>
-                <span class="text-[10px] font-mono text-gray-500" id="queue-count">0 ITEMS</span>
+        <div class="relative group mb-4">
+            <input type="file" id="file-input" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" multiple onchange="handleFileSelect(this)">
+            <div class="glass border-2 border-dashed border-slate-700 group-hover:border-blue-500 rounded-xl p-6 flex flex-col items-center justify-center transition-colors">
+                <div class="bg-blue-600 rounded-full p-3 mb-2 shadow-lg shadow-blue-600/20">
+                    <i data-lucide="plus" class="w-6 h-6 text-white"></i>
+                </div>
+                <span class="text-sm font-medium text-slate-300">Tap to Send Files</span>
             </div>
-            
-            <div id="file-list" class="flex-1 overflow-y-auto space-y-1 pr-1">
-                <div id="empty-state" class="h-full flex flex-col items-center justify-center opacity-20">
-                    <i data-lucide="activity" class="w-12 h-12 mb-2"></i>
-                    <p class="text-xs font-mono">SYSTEM READY</p>
+        </div>
+
+        <div class="flex-1 glass rounded-xl overflow-hidden flex flex-col">
+            <div class="px-4 py-3 bg-slate-900/50 border-b border-slate-700/50 flex justify-between items-center">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Activity Queue</span>
+            </div>
+            <div id="file-list" class="flex-1 overflow-y-auto p-3 space-y-2">
+                <div id="empty-state" class="h-full flex flex-col items-center justify-center opacity-30 text-slate-400">
+                    <i data-lucide="inbox" class="w-10 h-10 mb-2"></i>
+                    <p class="text-xs">No active transfers</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <template id="tpl-row">
-        <div class="row bg-[#0a0a0a] border border-gray-800 p-3 mb-1 relative group">
-            <div class="flex justify-between items-center relative z-10 mb-2">
-                <div class="flex items-center gap-3 overflow-hidden">
-                    <i data-lucide="file" class="w-4 h-4 text-gray-600 shrink-0 icon-type"></i>
-                    <span class="text-xs font-bold font-mono text-gray-300 truncate file-name">FILENAME</span>
+    <template id="file-row-template">
+        <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 relative overflow-hidden group mb-2">
+            <div class="flex items-center gap-3 relative z-10">
+                <div class="w-10 h-10 rounded bg-slate-900 flex items-center justify-center shrink-0">
+                    <i data-lucide="file" class="w-5 h-5 text-slate-400 icon-type"></i>
                 </div>
-                <button class="btn-cancel text-gray-600 hover:text-[#ff0055]">
-                    <i data-lucide="x" class="w-4 h-4"></i>
-                </button>
-            </div>
-            <div class="bar-container">
-                <div class="bar-fill"></div>
-            </div>
-            <div class="flex justify-between mt-1">
-                <span class="text-[10px] font-mono text-gray-600 file-size">0 MB</span>
-                <span class="text-[10px] font-mono text-gray-500 file-pct">0%</span>
+                <div class="flex-1 min-w-0">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-sm font-medium text-slate-200 truncate pr-2 file-name">filename.ext</span>
+                        <button class="btn-cancel p-1 text-slate-500 hover:text-red-400 transition-colors" title="Cancel">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                        <div class="progress-bar h-full bg-blue-500 w-0"></div>
+                    </div>
+                    <div class="flex justify-between mt-1">
+                        <span class="text-[10px] text-slate-500 file-size">0 MB</span>
+                        <span class="text-[10px] text-slate-400 font-mono file-pct">0%</span>
+                    </div>
+                </div>
             </div>
         </div>
     </template>
 
     <script>
-        // --- 1. ENGINE CONFIGURATION (LUDICROUS MODE) ---
+        // --- CONFIGURATION ---
+        const CHUNK_SIZE = 512 * 1024; // 512KB (Safe & Fast)
+        const BUFFER_LIMIT = 16 * 1024 * 1024; // 16MB Max Buffer
         
-        // 512KB Chunks: The sweet spot for 5GHz WiFi.
-        // Too small (16KB) = High CPU overhead = Slow.
-        // Too big (16MB) = Memory spikes = Crash.
-        const CHUNK_SIZE = 512 * 1024; 
-        
-        // 64MB Buffer: Aggressive pre-loading to ensure the radio never idles.
-        const BUFFER_HIGH = 64 * 1024 * 1024;
-        const BUFFER_LOW = 4 * 1024 * 1024; // Resume reading when buffer drops to 4MB
-
-        const PEER_CFG = {
+        const PEER_CONFIG = {
             iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' } // Only basic STUN needed for Hole Punching
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:global.stun.twilio.com:3478' }
             ],
             debug: 0
         };
@@ -165,22 +166,20 @@
         let isProcessing = false;
         let currentTask = null;
 
-        // --- 2. CONNECTIVITY ---
+        // --- 1. INITIALIZATION ---
         function init() {
-            peer = new Peer(myId, PEER_CFG);
+            peer = new Peer(myId, PEER_CONFIG);
             
-            peer.on('open', id => {
-                document.getElementById('net-status').innerText = "NETWORK: ONLINE (READY)";
-                document.getElementById('net-status').classList.add('text-[#00ff9d]');
-            });
+            peer.on('open', id => console.log('Peer Ready:', id));
             
-            peer.on('connection', c => handleConn(c));
+            peer.on('connection', c => handleConnection(c));
             
             peer.on('error', err => {
-                showToast("CONNECTION ERROR", 'err');
+                showToast("Connection Error", "error");
                 resetUI();
             });
 
+            // Handle Tab Close
             window.addEventListener('beforeunload', () => {
                 if(conn && conn.open) conn.send({ type: 'bye' });
             });
@@ -189,93 +188,102 @@
 
         function connect() {
             const pid = document.getElementById('partner-id').value.trim();
-            if(pid.length !== 4) return showToast("INVALID ID", 'err');
+            if(pid.length !== 4) return showToast("Invalid ID", "error");
             
-            document.getElementById('btn-conn').innerText = "CONNECTING...";
+            const btn = document.getElementById('btn-connect');
+            btn.innerHTML = "Connecting...";
+            
             const c = peer.connect(pid, { reliable: true });
-            handleConn(c);
+            handleConnection(c);
         }
 
-        function handleConn(c) {
+        function handleConnection(c) {
             conn = c;
+            
             conn.on('open', () => {
-                showView('view-dash');
-                showToast("SECURE CONNECTION ESTABLISHED");
+                document.getElementById('view-connect').classList.add('hidden-view');
+                document.getElementById('view-dashboard').classList.remove('hidden-view');
+                showToast("Connected Successfully", "success");
             });
-            conn.on('data', d => {
-                if(d instanceof ArrayBuffer || d instanceof Uint8Array) handleBinary(d);
-                else handleMsg(d);
+
+            conn.on('data', data => {
+                if (data instanceof ArrayBuffer || data instanceof Uint8Array) {
+                    handleBinary(data);
+                } else {
+                    handleMessage(data);
+                }
             });
-            conn.on('close', () => handleDisconnect());
-            conn.on('error', () => handleDisconnect());
+
+            conn.on('close', handleDisconnect);
+            conn.on('error', handleDisconnect);
         }
 
         function handleDisconnect() {
-            showToast("CONNECTION LOST", 'err');
-            setTimeout(() => location.reload(), 2000);
+            showToast("Partner Disconnected", "error");
+            setTimeout(() => location.reload(), 1500);
         }
 
-        function endSession() {
+        function disconnect() {
             if(conn) conn.send({ type: 'bye' });
             handleDisconnect();
         }
 
-        // --- 3. QUEUE SYSTEM ---
+        // --- 2. QUEUE SYSTEM ---
 
-        function handleFiles(input) {
+        function handleFileSelect(input) {
             const files = Array.from(input.files);
             if(!files.length) return;
             document.getElementById('empty-state').classList.add('hidden');
 
             files.forEach(f => {
-                const id = Math.random().toString(36).substr(2, 6);
-                createRow(id, f.name, 'up', f.size);
-                queue.push({ id, file: f, type: 'up', name: f.name, size: f.size, status: 'wait' });
+                const id = Math.random().toString(36).substr(2, 9);
+                createRow(id, f.name, f.size, 'up');
+                queue.push({
+                    id, file: f, type: 'up', name: f.name, size: f.size, status: 'pending'
+                });
             });
+
             input.value = '';
             updateQueueCount();
             processQueue();
         }
 
         async function processQueue() {
-            if(isProcessing || queue.length === 0) {
-                if(queue.length === 0) document.getElementById('status-badge').innerText = "IDLE";
-                return;
-            }
+            if (isProcessing || queue.length === 0) return;
 
-            const task = queue.find(t => t.status === 'wait');
-            if(!task) return;
+            // Find next pending task
+            const task = queue.find(t => t.status === 'pending');
+            if (!task) return;
 
             isProcessing = true;
             currentTask = task;
             task.status = 'active';
-            
             updateRowStatus(task.id, 'active');
-            document.getElementById('status-badge').innerText = "TRANSMITTING";
-            document.getElementById('status-badge').className = "text-[10px] bg-[#00ff9d] text-black px-2 py-0.5 font-bold animate-pulse";
 
             try {
-                if(task.type === 'up') await uploadEngine(task);
-            } catch(e) {
-                console.error(e);
-                if(task.status !== 'cancelled') updateRowStatus(task.id, 'err');
+                if (task.type === 'up') {
+                    await uploadFile(task);
+                }
+                // 'down' tasks are passive, handled in handleMessage
+            } catch (err) {
+                console.error(err);
+                if (task.status !== 'cancelled') updateRowStatus(task.id, 'error');
             }
 
-            resetEngineState();
+            // Cleanup
+            isProcessing = false;
+            currentTask = null;
+            document.getElementById('speed-meter').innerText = "0.0 MB/s";
+            
+            // Trigger next
             processQueue();
         }
 
-        function resetEngineState() {
-            isProcessing = false;
-            currentTask = null;
-            document.getElementById('speed-meter').innerHTML = `0.0 <span class="text-lg text-gray-600">MB/s</span>`;
-            document.getElementById('status-badge').innerText = "IDLE";
-            document.getElementById('status-badge').className = "text-[10px] bg-gray-800 text-gray-400 px-2 py-0.5 font-bold";
-        }
-
-        // --- 4. UPLOAD ENGINE (SENDER) ---
-        async function uploadEngine(task) {
+        // --- 3. UPLOAD ENGINE ---
+        
+        async function uploadFile(task) {
             return new Promise((resolve) => {
+                // Send Header
                 conn.send({ type: 'header', id: task.id, name: task.name, size: task.size });
 
                 const reader = new FileReader();
@@ -283,6 +291,7 @@
                 let lastTime = Date.now();
                 let bytesSince = 0;
 
+                // Cancel Hook
                 task.cancel = () => {
                     reader.abort();
                     conn.send({ type: 'cancel', id: task.id });
@@ -300,33 +309,26 @@
                 reader.onload = async (e) => {
                     if(task.status === 'cancelled') return;
 
-                    // Backpressure Loop
-                    if(conn.dataChannel.bufferedAmount > BUFFER_HIGH) {
-                        await new Promise(r => {
-                            const i = setInterval(() => {
-                                if(conn.dataChannel.bufferedAmount < BUFFER_LOW) {
-                                    clearInterval(i);
-                                    r();
-                                }
-                            }, 5);
-                        });
+                    // Backpressure
+                    while (conn.dataChannel.bufferedAmount > BUFFER_LIMIT) {
+                        await new Promise(r => setTimeout(r, 10));
                     }
 
                     conn.send(e.target.result);
                     offset += e.target.result.byteLength;
                     bytesSince += e.target.result.byteLength;
 
-                    // UI Throttling (1000ms = 1s) - Save CPU
+                    // UI Throttling (300ms)
                     const now = Date.now();
-                    if(now - lastTime > 1000) {
+                    if (now - lastTime > 300) {
                         const mbps = (bytesSince / 1024 / 1024) / ((now - lastTime) / 1000);
-                        document.getElementById('speed-meter').innerHTML = `${mbps.toFixed(1)} <span class="text-lg text-gray-600">MB/s</span>`;
+                        document.getElementById('speed-meter').innerText = mbps.toFixed(1) + " MB/s";
                         updateProgress(task.id, offset, task.size);
                         lastTime = now;
                         bytesSince = 0;
                     }
 
-                    if(offset < task.size) {
+                    if (offset < task.size) {
                         readNext();
                     } else {
                         conn.send({ type: 'end', id: task.id });
@@ -335,24 +337,27 @@
                         resolve();
                     }
                 };
+
                 readNext();
             });
         }
 
-        // --- 5. RECEIVER ENGINE ---
-        
-        async function handleMsg(msg) {
-            if(msg.type === 'bye') handleDisconnect();
-            
-            else if(msg.type === 'header') {
+        // --- 4. DOWNLOAD ENGINE ---
+
+        async function handleMessage(msg) {
+            if (msg.type === 'bye') {
+                handleDisconnect();
+            } else if (msg.type === 'header') {
+                // Incoming File
                 document.getElementById('empty-state').classList.add('hidden');
-                createRow(msg.id, msg.name, 'down', msg.size);
+                createRow(msg.id, msg.name, msg.size, 'down');
 
                 const task = {
                     id: msg.id, type: 'down', name: msg.name, size: msg.size,
                     status: 'active', received: 0, lastTime: Date.now(), bytesSince: 0
                 };
 
+                // Create Stream
                 const fileStream = streamSaver.createWriteStream(msg.name, { size: msg.size });
                 task.writer = fileStream.getWriter();
 
@@ -361,39 +366,43 @@
                     conn.send({ type: 'cancel', id: task.id });
                     task.status = 'cancelled';
                     updateRowStatus(task.id, 'cancelled');
-                    resetEngineState();
+                    isProcessing = false;
+                    currentTask = null;
                 };
 
                 currentTask = task;
                 isProcessing = true;
                 updateRowStatus(msg.id, 'active');
-                document.getElementById('status-badge').innerText = "RECEIVING";
-                document.getElementById('status-badge').className = "text-[10px] bg-[#00ff9d] text-black px-2 py-0.5 font-bold animate-pulse";
-            }
-            
-            else if(msg.type === 'end') {
-                if(currentTask && currentTask.id === msg.id) {
+            } else if (msg.type === 'end') {
+                if (currentTask && currentTask.id === msg.id) {
                     currentTask.writer.close();
                     updateRowStatus(msg.id, 'done');
-                    resetEngineState();
+                    isProcessing = false;
+                    currentTask = null;
+                    document.getElementById('speed-meter').innerText = "0.0 MB/s";
                 }
-            }
-            
-            else if(msg.type === 'cancel') {
-                if(currentTask && currentTask.id === msg.id) {
-                    if(currentTask.type === 'up') currentTask.status = 'cancelled'; 
-                    else currentTask.writer.abort();
-                    
+            } else if (msg.type === 'cancel') {
+                if (currentTask && currentTask.id === msg.id) {
+                    if (currentTask.type === 'up') {
+                        currentTask.status = 'cancelled'; // Stops reader
+                    } else {
+                        currentTask.writer.abort(); // Stops writer
+                    }
                     updateRowStatus(msg.id, 'cancelled');
-                    resetEngineState();
-                    // Sender sync delay
+                    
+                    // Reset State
+                    isProcessing = false;
+                    currentTask = null;
+                    document.getElementById('speed-meter').innerText = "0.0 MB/s";
+                    
+                    // Try next file
                     setTimeout(processQueue, 500);
                 }
             }
         }
 
         function handleBinary(data) {
-            if(!currentTask || currentTask.type !== 'down' || currentTask.status !== 'active') return;
+            if (!currentTask || currentTask.type !== 'down' || currentTask.status !== 'active') return;
 
             const arr = new Uint8Array(data);
             currentTask.writer.write(arr);
@@ -401,9 +410,9 @@
             currentTask.bytesSince += arr.length;
 
             const now = Date.now();
-            if(now - currentTask.lastTime > 1000) {
+            if (now - currentTask.lastTime > 300) {
                 const mbps = (currentTask.bytesSince / 1024 / 1024) / ((now - currentTask.lastTime) / 1000);
-                document.getElementById('speed-meter').innerHTML = `${mbps.toFixed(1)} <span class="text-lg text-gray-600">MB/s</span>`;
+                document.getElementById('speed-meter').innerText = mbps.toFixed(1) + " MB/s";
                 updateProgress(currentTask.id, currentTask.received, currentTask.size);
                 currentTask.lastTime = now;
                 currentTask.bytesSince = 0;
@@ -412,22 +421,23 @@
 
         // --- UI UTILS ---
 
-        function createRow(id, name, type, size) {
-            const tpl = document.getElementById('tpl-row').content.cloneNode(true);
-            const el = tpl.querySelector('.row');
+        function createRow(id, name, size, type) {
+            const tpl = document.getElementById('file-row-template').content.cloneNode(true);
+            const el = tpl.querySelector('div');
             el.id = `row-${id}`;
             el.querySelector('.file-name').innerText = name;
             el.querySelector('.file-size').innerText = formatBytes(size);
             
             const icon = el.querySelector('.icon-type');
-            if(type === 'up') icon.classList.add('text-[#00ff9d]');
-            else icon.classList.add('text-blue-400');
+            if (type === 'up') icon.classList.add('text-blue-400');
+            else icon.classList.add('text-emerald-400');
 
             el.querySelector('.btn-cancel').onclick = () => {
-                if(currentTask && currentTask.id === id) currentTask.cancel();
-                else {
+                if (currentTask && currentTask.id === id) {
+                    currentTask.cancel();
+                } else {
                     const idx = queue.findIndex(t => t.id === id);
-                    if(idx > -1) { queue.splice(idx, 1); el.remove(); updateQueueCount(); }
+                    if (idx > -1) { queue.splice(idx, 1); el.remove(); updateQueueCount(); }
                 }
             };
 
@@ -437,67 +447,63 @@
 
         function updateProgress(id, curr, total) {
             const el = document.getElementById(`row-${id}`);
-            if(el) {
-                const pct = Math.floor((curr/total)*100);
-                el.querySelector('.bar-fill').style.width = `${pct}%`;
-                el.querySelector('.file-pct').innerText = `${pct}%`;
+            if (el) {
+                const p = Math.floor((curr / total) * 100);
+                el.querySelector('.progress-bar').style.width = `${p}%`;
+                el.querySelector('.file-pct').innerText = `${p}%`;
             }
         }
 
         function updateRowStatus(id, status) {
             const el = document.getElementById(`row-${id}`);
-            if(!el) return;
-            
-            if(status === 'active') {
-                el.style.borderColor = '#00ff9d';
-                el.style.backgroundColor = 'rgba(0, 255, 157, 0.05)';
-            }
-            else if(status === 'done') {
-                el.style.borderColor = '#333';
-                el.style.opacity = '0.5';
-                el.querySelector('.bar-fill').style.backgroundColor = '#10b981';
+            if (!el) return;
+
+            if (status === 'active') {
+                el.classList.add('border-blue-500/50', 'bg-blue-500/10');
+            } else if (status === 'done') {
+                el.classList.remove('border-blue-500/50', 'bg-blue-500/10');
+                el.classList.add('opacity-60');
+                el.querySelector('.progress-bar').classList.replace('bg-blue-500', 'bg-emerald-500');
                 el.querySelector('.btn-cancel').remove();
-            }
-            else if(status === 'cancelled') {
-                el.style.borderColor = '#ff0055';
-                el.style.opacity = '0.5';
-                el.querySelector('.bar-fill').style.backgroundColor = '#ff0055';
+            } else if (status === 'cancelled') {
+                el.classList.remove('border-blue-500/50', 'bg-blue-500/10');
+                el.classList.add('opacity-60');
+                el.querySelector('.progress-bar').classList.replace('bg-blue-500', 'bg-red-500');
+                el.querySelector('.file-name').classList.add('line-through', 'text-red-400');
                 el.querySelector('.btn-cancel').remove();
-                el.querySelector('.file-name').classList.add('line-through', 'text-red-500');
             }
         }
 
         function updateQueueCount() {
-            document.getElementById('queue-count').innerText = `${queue.length} ITEMS`;
+            document.getElementById('queue-count').innerText = queue.filter(t => t.status === 'pending').length;
         }
 
         function formatBytes(bytes) {
             if (bytes === 0) return '0 B';
-            const k = 1024; const sizes = ['B', 'KB', 'MB', 'GB'];
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
         }
 
-        function showView(id) {
-            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden-view'));
-            document.getElementById(id).classList.remove('hidden-view');
-        }
-
-        function showToast(msg, type='normal') {
+        function showToast(msg, type) {
             const t = document.createElement('div');
-            t.className = `toast px-4 py-2 rounded font-mono text-xs font-bold text-black pointer-events-auto ${type==='err'?'bg-[#ff0055] text-white':'bg-[#00ff9d]'}`;
-            t.innerText = msg;
-            document.getElementById('toast-area').appendChild(t);
+            t.className = "toast";
+            const icon = type === 'error' ? 'alert-circle' : 'check-circle';
+            const color = type === 'error' ? 'text-red-400' : 'text-emerald-400';
+            t.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 ${color}"></i> ${msg}`;
+            document.getElementById('toast-container').appendChild(t);
+            lucide.createIcons();
             setTimeout(() => t.remove(), 3000);
         }
 
         function copyId() {
             navigator.clipboard.writeText(myId);
-            showToast("ID COPIED");
+            showToast("ID Copied", "success");
         }
-        
+
         function resetUI() {
-            document.getElementById('btn-conn').innerText = "INITIATE LINK";
+            document.getElementById('btn-connect').innerText = "Connect Devices";
         }
     </script>
 </body>
