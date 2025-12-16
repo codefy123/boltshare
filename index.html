@@ -2,190 +2,191 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FlashShare Ultimate</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FlashShare Pro</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    
     <script src="https://unpkg.com/lucide@latest"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/streamsaver@2.0.6/StreamSaver.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/web-streams-polyfill@2.0.2/dist/polyfill.min.js"></script>
 
     <style>
-        .glass { background: rgba(17, 24, 39, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(75, 85, 99, 0.4); }
-        .bg-pattern { background-image: radial-gradient(rgba(139, 92, 246, 0.15) 1px, transparent 1px); background-size: 24px 24px; }
-        .progress-bar-animated { transition: width 0.3s ease-in-out; }
+        /* Modern Glass Effect */
+        .glass { 
+            background: rgba(17, 24, 39, 0.7); 
+            backdrop-filter: blur(12px); 
+            -webkit-backdrop-filter: blur(12px); 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+        }
+        
+        /* Gradient Animation for Progress */
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .animate-shimmer {
+            background: linear-gradient(90deg, #8b5cf6 25%, #a78bfa 50%, #8b5cf6 75%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+
+        /* Mobile Adjustments */
+        body { -webkit-tap-highlight-color: transparent; }
     </style>
 </head>
-<body class="bg-gray-950 text-white min-h-screen font-sans bg-pattern flex flex-col">
+<body class="bg-gray-950 text-white min-h-screen font-sans flex flex-col selection:bg-purple-500 selection:text-white pb-10">
 
-    <div id="speed-tip" class="bg-indigo-900/90 text-indigo-100 px-4 py-2 text-center text-sm flex justify-center items-center gap-4 border-b border-indigo-700">
-        <span class="flex items-center gap-2">
-            <i data-lucide="wifi" class="w-4 h-4"></i>
-            <b>Tip:</b> Switch your Hotspot/WiFi to <b>5GHz Band</b> or <b>WiFi 6</b> for speeds over 20 MB/s.
-        </span>
-        <button onclick="document.getElementById('speed-tip').remove()" class="hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
-    </div>
-
-    <nav class="p-4 md:p-6 border-b border-gray-800 bg-gray-900/80 sticky top-0 z-50 backdrop-blur-md">
-        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-2 text-purple-500">
-                <div class="p-2 bg-purple-500/10 rounded-lg"><i data-lucide="zap" class="w-6 h-6"></i></div>
-                <h1 class="text-xl font-bold text-white tracking-tight">FlashShare <span class="text-xs text-purple-400 font-normal border border-purple-500/30 px-1 rounded">Ultimate</span></h1>
+    <nav class="p-4 border-b border-gray-800 bg-gray-900/80 sticky top-0 z-50 backdrop-blur-md">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="bg-purple-600 p-1.5 rounded-lg">
+                    <i data-lucide="zap" class="w-5 h-5 text-white"></i>
+                </div>
+                <span class="font-bold text-lg tracking-tight hidden sm:block">FlashShare</span>
             </div>
             
-            <div class="flex items-center gap-3 bg-gray-800/50 p-2 pr-4 rounded-full border border-gray-700">
-                <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center font-bold text-xs" id="user-avatar">ME</div>
-                <div class="flex flex-col leading-tight">
-                    <span class="text-xs text-gray-400">My Username</span>
-                    <span class="font-bold text-sm text-purple-300 font-mono" id="my-username">Generating...</span>
+            <div class="flex items-center gap-3">
+                <div class="text-right hidden sm:block">
+                    <p class="text-[10px] text-gray-400 uppercase tracking-wider">Your Code</p>
+                    <p class="font-mono font-bold text-purple-400 text-lg leading-none" id="my-code">...</p>
                 </div>
-                <button onclick="copyId()" class="ml-2 p-1.5 hover:bg-gray-700 rounded-full transition-colors text-gray-400 hover:text-white" title="Copy ID">
-                    <i data-lucide="copy" class="w-4 h-4"></i>
-                </button>
+                <div class="sm:hidden bg-gray-800 px-3 py-1 rounded-lg border border-gray-700">
+                    <span class="text-xs text-gray-400">Code:</span>
+                    <span class="font-mono font-bold text-purple-400 ml-1" id="my-code-mobile">...</span>
+                </div>
             </div>
         </div>
     </nav>
 
-    <main class="flex-1 max-w-6xl mx-auto w-full p-4 md:p-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <main class="flex-1 max-w-6xl mx-auto w-full p-4 grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
         
-        <div class="lg:col-span-1 space-y-6">
-            <div class="glass rounded-2xl p-6 shadow-xl">
-                <h2 class="text-lg font-bold mb-4 flex items-center gap-2 text-gray-200">
-                    <i data-lucide="link" class="w-5 h-5 text-purple-400"></i> Pair Devices
-                </h2>
-
-                <div id="connection-form" class="space-y-4">
-                    <p class="text-sm text-gray-400">Enter the generated username from the other device to connect.</p>
-                    <div class="relative">
-                        <input type="text" id="partner-id" placeholder="Ex: NEON-TIGER" 
-                            class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 pl-10 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all font-mono uppercase text-sm">
-                        <i data-lucide="user" class="w-4 h-4 text-gray-500 absolute left-3 top-3.5"></i>
+        <div class="lg:col-span-1 space-y-4">
+            <div class="glass rounded-2xl p-5 shadow-xl">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-bold text-gray-200 flex items-center gap-2">
+                        <i data-lucide="link" class="w-4 h-4 text-purple-400"></i> Connect
+                    </h2>
+                    <div id="connection-status" class="text-xs px-2 py-1 rounded-full bg-red-500/10 text-red-400 flex items-center gap-1">
+                        <div class="w-1.5 h-1.5 rounded-full bg-red-500"></div> Offline
                     </div>
-                    <button onclick="connectToPeer()" id="connect-btn"
-                        class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-purple-900/20 flex items-center justify-center gap-2">
-                        Connect
+                </div>
+
+                <div id="connect-form" class="space-y-3">
+                    <input type="text" id="partner-code" placeholder="Enter 4-Digit Code" maxlength="4"
+                        class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-center tracking-[0.5em] font-mono text-lg uppercase focus:border-purple-500 focus:outline-none transition-all placeholder:tracking-normal placeholder:normal-case placeholder:text-sm">
+                    
+                    <button onclick="connectToPeer()" id="btn-connect"
+                        class="w-full bg-white text-black font-bold py-3 rounded-xl hover:bg-gray-200 active:scale-95 transition-all flex justify-center items-center gap-2">
+                        Pair Devices
                     </button>
                 </div>
 
-                <div id="active-connection" class="hidden text-center py-4">
-                    <div class="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-3 text-green-400 animate-pulse">
-                        <i data-lucide="wifi" class="w-8 h-8"></i>
-                    </div>
-                    <h3 class="font-bold text-green-400">Connected</h3>
-                    <p class="text-sm text-gray-400 mb-4">Linked with <span id="partner-name" class="text-white font-mono">...</span></p>
-                    <button onclick="location.reload()" class="text-xs text-red-400 hover:text-red-300 underline">Disconnect</button>
+                <div id="connected-info" class="hidden text-center py-2">
+                    <p class="text-sm text-gray-400">Connected to:</p>
+                    <p class="text-lg font-bold text-white mb-3" id="partner-name">Unknown</p>
+                    <button onclick="disconnect()" class="text-xs text-red-400 border border-red-500/30 px-3 py-1.5 rounded-lg hover:bg-red-500/10">
+                        Disconnect
+                    </button>
                 </div>
             </div>
 
-            <div class="glass rounded-2xl p-6 text-center md:text-left">
-                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Transfer Stats</h3>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-gray-900/50 p-3 rounded-xl border border-gray-800">
-                        <p class="text-xs text-gray-400">Current Speed</p>
-                        <p class="text-xl font-mono font-bold text-blue-400" id="stat-speed">0 MB/s</p>
-                    </div>
-                    <div class="bg-gray-900/50 p-3 rounded-xl border border-gray-800">
-                        <p class="text-xs text-gray-400">Last File</p>
-                        <p class="text-xl font-mono font-bold text-purple-400" id="stat-time">0s</p>
-                    </div>
+            <div class="glass rounded-xl p-4 flex items-start gap-3 border-l-4 border-l-blue-500">
+                <i data-lucide="wifi" class="w-5 h-5 text-blue-400 shrink-0 mt-0.5"></i>
+                <div>
+                    <p class="text-xs font-bold text-blue-100">Speed Tip</p>
+                    <p class="text-[11px] text-gray-400 leading-tight mt-1">
+                        Connect both devices to <span class="text-white font-bold">5GHz WiFi</span> or the same <span class="text-white font-bold">5GHz Hotspot</span> for speeds up to 50MB/s.
+                    </p>
                 </div>
             </div>
         </div>
 
-        <div class="lg:col-span-2 flex flex-col gap-6">
+        <div class="lg:col-span-2 flex flex-col gap-4">
             
-            <div id="drop-zone" class="glass rounded-2xl p-1 h-64 relative group cursor-pointer transition-all hover:border-purple-500/50" onclick="triggerFileSelect()">
-                <div class="absolute inset-0 bg-gray-900/50 rounded-2xl flex flex-col items-center justify-center text-center p-6 transition-colors group-hover:bg-gray-800/50">
-                    <input type="file" id="file-input" class="hidden" onchange="handleFileSelect(this)">
-                    <div class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-xl shadow-black/50 border border-gray-700">
-                        <i data-lucide="upload-cloud" class="w-10 h-10 text-purple-500"></i>
-                    </div>
-                    <h3 class="text-2xl font-bold text-gray-200">Send Files</h3>
-                    <p class="text-gray-400 mt-2">Click or Drag & Drop to Share</p>
-                    <span class="mt-4 px-3 py-1 bg-gray-800 rounded-full text-xs text-gray-500 border border-gray-700">Supports 10GB+ sizes</span>
+            <div onclick="triggerFileSelect()" class="glass rounded-2xl p-8 border-2 border-dashed border-gray-700 hover:border-purple-500/50 cursor-pointer group text-center transition-all active:bg-gray-800/50">
+                <input type="file" id="file-input" class="hidden" multiple onchange="handleFileSelect(this)">
+                
+                <div class="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform shadow-lg shadow-black/40">
+                    <i data-lucide="upload-cloud" class="w-8 h-8 text-purple-500"></i>
                 </div>
+                <h3 class="text-xl font-bold text-gray-100">Tap to Send Files</h3>
+                <p class="text-sm text-gray-500 mt-1">Select multiple files • Photos • Videos</p>
             </div>
 
-            <div class="glass rounded-2xl overflow-hidden flex-1 min-h-[300px] flex flex-col">
-                <div class="p-4 border-b border-gray-800 bg-gray-900/50 flex justify-between items-center">
-                    <h3 class="font-bold text-gray-300 flex items-center gap-2">
-                        <i data-lucide="activity" class="w-4 h-4 text-purple-400"></i> Activity
-                    </h3>
-                    <button onclick="clearHistory()" class="text-xs text-gray-500 hover:text-white">Clear</button>
+            <div class="glass rounded-2xl flex-1 overflow-hidden min-h-[300px] flex flex-col">
+                <div class="p-4 border-b border-gray-800 bg-gray-900/50 flex justify-between items-center sticky top-0 backdrop-blur-sm z-10">
+                    <h3 class="font-bold text-gray-300 text-sm uppercase tracking-wide">Activity</h3>
+                    <span id="speed-indicator" class="text-xs font-mono text-purple-400">0.0 MB/s</span>
                 </div>
                 
-                <div id="activity-list" class="p-4 space-y-4 overflow-y-auto max-h-[400px]">
-                    <div id="empty-state" class="text-center py-10 opacity-50">
-                        <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2 text-gray-600"></i>
-                        <p class="text-gray-500 text-sm">No transfers yet</p>
+                <div id="file-list" class="p-4 space-y-3 overflow-y-auto max-h-[500px]">
+                    <div id="empty-state" class="flex flex-col items-center justify-center py-12 opacity-40">
+                        <i data-lucide="inbox" class="w-12 h-12 mb-3 text-gray-500"></i>
+                        <p class="text-sm text-gray-500">Transfers will appear here</p>
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <template id="transfer-item-template">
-        <div class="bg-gray-900 rounded-xl p-4 border border-gray-800 relative overflow-hidden group">
-            <div class="flex items-center gap-4 relative z-10">
-                <div class="transfer-icon-bg w-12 h-12 rounded-lg flex items-center justify-center shrink-0 bg-gray-800">
-                    <i data-lucide="file" class="w-6 h-6 text-gray-400"></i>
+    <footer class="mt-auto py-6 text-center border-t border-gray-900">
+        <p class="text-sm text-gray-500">
+            Created by 
+            <a href="https://www.linkedin.com/in/tauqeer-alam/" target="_blank" class="text-purple-400 hover:text-purple-300 font-bold hover:underline transition-all">
+                Tauqeer Alam
+            </a>
+        </p>
+    </footer>
+
+    <template id="file-item-template">
+        <div class="bg-gray-900/80 rounded-xl p-3 border border-gray-800 flex items-center gap-3 relative overflow-hidden group">
+            <div class="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center shrink-0">
+                <i data-lucide="file" class="w-5 h-5 text-gray-400 icon-type"></i>
+            </div>
+            
+            <div class="flex-1 min-w-0 z-10">
+                <div class="flex justify-between items-baseline mb-1">
+                    <h4 class="text-sm font-medium text-gray-200 truncate pr-2 file-name">img_2024.jpg</h4>
+                    <span class="text-[10px] text-gray-500 file-size">2.4 MB</span>
                 </div>
-                
-                <div class="flex-1 min-w-0">
-                    <div class="flex justify-between mb-1">
-                        <h4 class="font-bold text-sm truncate text-gray-200 transfer-name">filename.ext</h4>
-                        <span class="text-xs font-mono text-gray-400 transfer-size">0 MB</span>
-                    </div>
-                    <div class="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
-                        <div class="transfer-bar bg-purple-500 h-full w-0 progress-bar-animated"></div>
-                    </div>
-                    <div class="flex justify-between mt-1 text-xs text-gray-500">
-                        <span class="transfer-status">Waiting...</span>
-                        <span class="transfer-percent">0%</span>
-                    </div>
+                <div class="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
+                    <div class="h-full bg-purple-500 w-0 transition-all duration-300 progress-bar"></div>
+                </div>
+                <div class="flex justify-between mt-1">
+                    <span class="text-[10px] text-gray-500 file-status">Waiting...</span>
+                    <span class="text-[10px] font-mono text-purple-400 file-percent">0%</span>
                 </div>
             </div>
         </div>
     </template>
 
     <script>
-        // --- 1. CONFIG & UTILS ---
+        // --- CONFIG ---
         lucide.createIcons();
         
-        const adjectives = ["NEON", "CYBER", "IRON", "BLUE", "RED", "DARK", "FAST", "MEGA"];
-        const animals = ["TIGER", "WOLF", "EAGLE", "HAWK", "BEAR", "LION", "SHARK", "FALCON"];
+        // --- GLOBAL VARIABLES ---
+        const myCode = Math.floor(1000 + Math.random() * 9000).toString(); // Short 4-digit Code
+        const myName = "User-" + Math.floor(Math.random() * 1000); // Friendly Name
         
-        function generateUsername() {
-            const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
-            const ani = animals[Math.floor(Math.random() * animals.length)];
-            const num = Math.floor(Math.random() * 99) + 1; // 1-99
-            return `${adj}-${ani}-${num}`;
-        }
-
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        // --- 2. GLOBAL STATE ---
-        let myName = generateUsername();
-        document.getElementById('my-username').innerText = myName;
-        document.getElementById('user-avatar').innerText = myName.substring(0, 2);
-
         let peer = null;
         let conn = null;
-        let activeTransfers = {}; // Store transfer state by Name/ID
+        let activeTransfers = {}; // Stores progress for multiple files
 
-        // --- 3. PEERJS SETUP ---
+        // Display My Code
+        document.getElementById('my-code').innerText = myCode;
+        document.getElementById('my-code-mobile').innerText = myCode;
+
+        // --- 1. PEERJS SETUP ---
         function initPeer() {
-            // Using the generated name as the ID directly for simplicity
-            peer = new Peer(myName);
+            // Using the short code as the Peer ID
+            peer = new Peer(myCode);
 
             peer.on('open', (id) => {
-                console.log('My ID:', id);
+                console.log("My Peer ID:", id);
             });
 
             peer.on('connection', (connection) => {
@@ -194,66 +195,93 @@
 
             peer.on('error', (err) => {
                 if(err.type === 'unavailable-id') {
-                    // Name taken? Retry with new name
-                    myName = generateUsername(); 
-                    initPeer();
+                    alert("Code collision! Refreshing...");
+                    location.reload();
                 } else {
-                    alert("Network Error: " + err.type);
+                    console.error(err);
                 }
             });
         }
         initPeer();
 
-        // Connect Button Logic
+        // --- 2. CONNECT LOGIC ---
         function connectToPeer() {
-            const target = document.getElementById('partner-id').value.trim().toUpperCase();
-            if(!target) return alert("Enter a username!");
-            if(target === myName) return alert("You can't connect to yourself!");
-            
-            const connection = peer.connect(target);
+            const code = document.getElementById('partner-code').value.trim();
+            if(code.length !== 4) return alert("Please enter a 4-digit code");
+            if(code === myCode) return alert("Cannot connect to yourself");
+
+            const btn = document.getElementById('btn-connect');
+            btn.innerText = "Connecting...";
+            btn.disabled = true;
+
+            const connection = peer.connect(code, {
+                metadata: { name: myName } // Send my name to them
+            });
             handleConnection(connection);
         }
 
         function handleConnection(connection) {
             conn = connection;
-            
+
             conn.on('open', () => {
                 // UI Update
-                document.getElementById('connection-form').classList.add('hidden');
-                document.getElementById('active-connection').classList.remove('hidden');
-                document.getElementById('partner-name').innerText = conn.peer;
+                document.getElementById('connect-form').classList.add('hidden');
+                document.getElementById('connected-info').classList.remove('hidden');
                 
-                // If I initiated, send a Hello to verify
-                if(conn.peer !== myName) {
-                    console.log("Connected to " + conn.peer);
-                }
+                // Status Badge
+                const badge = document.getElementById('connection-status');
+                badge.className = "text-xs px-2 py-1 rounded-full bg-green-500/10 text-green-400 flex items-center gap-1";
+                badge.innerHTML = `<div class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div> Online`;
+
+                // Get Partner Name (if I initiated, it's in metadata. If they initiated, I need to wait for data or assume)
+                const partnerName = conn.metadata?.name || "Partner Device";
+                document.getElementById('partner-name').innerText = partnerName;
             });
 
-            conn.on('data', (data) => processData(data));
+            conn.on('data', processData);
             
             conn.on('close', () => {
-                alert("Connection lost");
+                alert("Disconnected");
                 location.reload();
             });
         }
 
-        // --- 4. SENDING LOGIC (With ACK & Speed) ---
+        function disconnect() {
+            if(conn) conn.close();
+            location.reload();
+        }
+
+        // --- 3. SEND FILES (MULTIPLE SUPPORT) ---
         const CHUNK_SIZE = 64 * 1024; // 64KB
 
         function triggerFileSelect() {
-            if(!conn) return alert("Connect to a user first!");
+            if(!conn) return alert("Please connect to a device first!");
             document.getElementById('file-input').click();
         }
 
         async function handleFileSelect(input) {
-            const file = input.files[0];
-            if (!file) return;
+            const files = input.files;
+            if (files.length === 0) return;
 
-            // Create UI Entry
-            const transferId = Date.now(); // Unique ID for this transfer
-            createTransferUI(transferId, file.name, file.size, 'upload');
+            // Hide Empty State
+            document.getElementById('empty-state').classList.add('hidden');
 
-            // Metadata
+            // Loop through all selected files
+            for (let i = 0; i < files.length; i++) {
+                sendFile(files[i]);
+            }
+            
+            // Reset input so same files can be selected again if needed
+            input.value = ''; 
+        }
+
+        async function sendFile(file) {
+            const transferId = Date.now() + Math.random().toString(); // Unique ID
+            
+            // 1. Create UI
+            createFileItem(transferId, file.name, file.size, 'upload');
+
+            // 2. Send Header
             conn.send({
                 type: 'header',
                 id: transferId,
@@ -262,17 +290,19 @@
                 mime: file.type
             });
 
-            // Start Sending
+            // 3. Read & Send
             const reader = new FileReader();
             let offset = 0;
-            let lastSpeedUpdate = Date.now();
-            let bytesSinceLastUpdate = 0;
+            
+            // Speed Calculation vars
+            let lastUpdate = Date.now();
+            let bytesSinceUpdate = 0;
 
             reader.onload = async (e) => {
                 if(!conn) return;
                 const chunk = e.target.result;
-                
-                // Backpressure
+
+                // Backpressure (Prevent crash)
                 while (conn.dataChannel.bufferedAmount > 10 * 1024 * 1024) {
                     await new Promise(r => setTimeout(r, 10));
                 }
@@ -284,24 +314,23 @@
                 });
 
                 offset += chunk.byteLength;
-                bytesSinceLastUpdate += chunk.byteLength;
+                bytesSinceUpdate += chunk.byteLength;
 
-                // Update UI & Speed every 500ms
+                // Update UI every 200ms
                 const now = Date.now();
-                if (now - lastSpeedUpdate >= 500) {
-                    const speed = (bytesSinceLastUpdate / 1024 / 1024) / ((now - lastSpeedUpdate) / 1000); // MB/s
-                    updateTransferUI(transferId, offset, file.size, speed.toFixed(1) + " MB/s", 'Sending...');
-                    updateGlobalSpeed(speed);
-                    
-                    lastSpeedUpdate = now;
-                    bytesSinceLastUpdate = 0;
+                if (now - lastUpdate > 200) {
+                    const speed = (bytesSinceUpdate / 1024 / 1024) / ((now - lastUpdate) / 1000);
+                    updateFileItem(transferId, offset, file.size, speed);
+                    document.getElementById('speed-indicator').innerText = speed.toFixed(1) + " MB/s";
+                    lastUpdate = now;
+                    bytesSinceUpdate = 0;
                 }
 
                 if (offset < file.size) {
                     readNext();
                 } else {
-                    // DONE READING - Wait for ACK
-                    updateTransferUI(transferId, file.size, file.size, "0 MB/s", "Waiting for receiver...");
+                    markComplete(transferId);
+                    document.getElementById('speed-indicator').innerText = "0.0 MB/s";
                 }
             };
 
@@ -312,124 +341,103 @@
             readNext();
         }
 
-        // --- 5. RECEIVING LOGIC ---
-        const currentDownloads = {}; // Map: transferId -> { writer, received, size, name, lastUpdate, bytesSince }
+        // --- 4. RECEIVE FILES ---
+        let downloads = {}; // Store active downloads by ID
 
         function processData(data) {
-            // 1. HEADER (Start)
+            // A. HEADER
             if (data.type === 'header') {
-                createTransferUI(data.id, data.name, data.size, 'download');
+                document.getElementById('empty-state').classList.add('hidden');
+                createFileItem(data.id, data.name, data.size, 'download');
                 
                 const fileStream = streamSaver.createWriteStream(data.name, { size: data.size });
-                currentDownloads[data.id] = {
+                downloads[data.id] = {
                     writer: fileStream.getWriter(),
                     received: 0,
                     size: data.size,
-                    name: data.name,
                     lastUpdate: Date.now(),
-                    bytesSince: 0
+                    bytesSinceUpdate: 0
                 };
-                return;
             }
-
-            // 2. CHUNK (Data)
-            if (data.type === 'chunk') {
-                const session = currentDownloads[data.id];
-                if(session && session.writer) {
+            // B. CHUNK
+            else if (data.type === 'chunk') {
+                const session = downloads[data.id];
+                if (session && session.writer) {
                     const array = new Uint8Array(data.data);
                     session.writer.write(array);
                     session.received += array.length;
-                    session.bytesSince += array.length;
+                    session.bytesSinceUpdate += array.length;
 
-                    // Update UI & Speed
+                    // Update UI
                     const now = Date.now();
-                    if (now - session.lastUpdate >= 500) {
-                         const speed = (session.bytesSince / 1024 / 1024) / ((now - session.lastUpdate) / 1000);
-                         updateTransferUI(data.id, session.received, session.size, speed.toFixed(1) + " MB/s", "Downloading...");
-                         updateGlobalSpeed(speed);
-                         
-                         session.lastUpdate = now;
-                         session.bytesSince = 0;
+                    if (now - session.lastUpdate > 200) {
+                        const speed = (session.bytesSinceUpdate / 1024 / 1024) / ((now - session.lastUpdate) / 1000);
+                        updateFileItem(data.id, session.received, session.size, speed);
+                        document.getElementById('speed-indicator').innerText = speed.toFixed(1) + " MB/s";
+                        session.lastUpdate = now;
+                        session.bytesSinceUpdate = 0;
                     }
 
-                    // Complete?
                     if (session.received === session.size) {
                         session.writer.close();
-                        // SEND ACK TO SENDER
-                        conn.send({ type: 'ack', id: data.id });
-                        finalizeTransferUI(data.id, true);
-                        delete currentDownloads[data.id];
+                        delete downloads[data.id];
+                        markComplete(data.id);
+                        document.getElementById('speed-indicator').innerText = "0.0 MB/s";
                     }
                 }
-                return;
-            }
-
-            // 3. ACK (Completion Confirmation for Sender)
-            if (data.type === 'ack') {
-                finalizeTransferUI(data.id, true);
             }
         }
 
-        // --- 6. UI MANIPULATION ---
-        function createTransferUI(id, name, size, type) {
-            document.getElementById('empty-state').classList.add('hidden');
-            const template = document.getElementById('transfer-item-template').content.cloneNode(true);
+        // --- 5. UI HELPERS ---
+        function createFileItem(id, name, size, type) {
+            const template = document.getElementById('file-item-template').content.cloneNode(true);
             const el = template.querySelector('div');
-            el.id = `tx-${id}`;
+            el.id = `file-${id}`;
             
-            el.querySelector('.transfer-name').innerText = name;
-            el.querySelector('.transfer-size').innerText = formatBytes(size);
+            el.querySelector('.file-name').innerText = name;
+            el.querySelector('.file-size').innerText = formatBytes(size);
             
-            const icon = type === 'upload' ? 'arrow-up' : 'arrow-down';
-            const color = type === 'upload' ? 'text-blue-400' : 'text-green-400';
-            // Simple icon set via HTML for speed
-            const iconContainer = el.querySelector('.transfer-icon-bg');
-            iconContainer.innerHTML = `<i data-lucide="${icon}" class="w-6 h-6 ${color}"></i>`;
+            const icon = type === 'upload' ? 'arrow-up-right' : 'arrow-down-left';
+            const iconClass = type === 'upload' ? 'text-blue-400' : 'text-green-400';
             
-            document.getElementById('activity-list').prepend(el);
+            // Fix Icon
+            const iconContainer = el.querySelector('.icon-type');
+            iconContainer.setAttribute('data-lucide', icon);
+            iconContainer.classList.add(iconClass);
+            
+            document.getElementById('file-list').prepend(el);
             lucide.createIcons();
         }
 
-        function updateTransferUI(id, current, total, speedStr, statusStr) {
-            const el = document.getElementById(`tx-${id}`);
+        function updateFileItem(id, current, total, speed) {
+            const el = document.getElementById(`file-${id}`);
             if(!el) return;
             
-            const pct = ((current / total) * 100).toFixed(1);
-            el.querySelector('.transfer-bar').style.width = `${pct}%`;
-            el.querySelector('.transfer-percent').innerText = `${pct}%`;
-            el.querySelector('.transfer-status').innerText = `${statusStr} (${speedStr})`;
+            const pct = ((current / total) * 100).toFixed(0);
+            el.querySelector('.progress-bar').style.width = `${pct}%`;
+            el.querySelector('.file-percent').innerText = `${pct}%`;
+            el.querySelector('.file-status').innerText = `${speed.toFixed(1)} MB/s`;
+            
+            // Add gradient animation when moving
+            el.querySelector('.progress-bar').classList.add('animate-shimmer');
         }
 
-        function finalizeTransferUI(id, success) {
-            const el = document.getElementById(`tx-${id}`);
+        function markComplete(id) {
+            const el = document.getElementById(`file-${id}`);
             if(!el) return;
             
-            el.querySelector('.transfer-bar').classList.remove('bg-purple-500');
-            el.querySelector('.transfer-bar').classList.add('bg-green-500');
-            el.querySelector('.transfer-percent').innerText = "100%";
-            el.querySelector('.transfer-status').innerText = "Transfer Complete";
-            el.querySelector('.transfer-status').classList.add('text-green-400', 'font-bold');
-            
-            // Reset Global Speed
-            document.getElementById('stat-speed').innerText = "0 MB/s";
+            el.querySelector('.progress-bar').classList.remove('bg-purple-500', 'animate-shimmer');
+            el.querySelector('.progress-bar').classList.add('bg-green-500');
+            el.querySelector('.file-status').innerText = "Completed";
+            el.querySelector('.file-status').classList.add('text-green-500');
         }
 
-        function updateGlobalSpeed(speedVal) {
-            document.getElementById('stat-speed').innerText = speedVal.toFixed(1) + " MB/s";
-        }
-
-        function copyId() {
-            navigator.clipboard.writeText(myName);
-            alert("Username Copied!");
-        }
-
-        function clearHistory() {
-            document.getElementById('activity-list').innerHTML = `
-                <div id="empty-state" class="text-center py-10 opacity-50">
-                    <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2 text-gray-600"></i>
-                    <p class="text-gray-500 text-sm">No transfers yet</p>
-                </div>`;
-            lucide.createIcons();
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
         }
     </script>
 </body>
