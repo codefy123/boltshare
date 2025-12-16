@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FlashShare - Instant File Transfer</title>
+    <title>FlashShare Pro - High Speed</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -11,119 +11,146 @@
     <script src="https://cdn.jsdelivr.net/npm/web-streams-polyfill@2.0.2/dist/polyfill.min.js"></script>
 
     <style>
-        .glass {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .progress-bar {
-            transition: width 0.1s linear;
-        }
+        .glass { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        /* Smooth progress bar transition */
+        .progress-fill { transition: width 0.2s ease-out; }
     </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen font-sans">
+<body class="bg-gray-950 text-white min-h-screen font-sans selection:bg-purple-500 selection:text-white">
 
-    <nav class="p-6 border-b border-gray-800 bg-gray-900/80 sticky top-0 z-50 backdrop-blur-md">
-        <div class="max-w-6xl mx-auto flex justify-between items-center">
+    <nav class="p-6 border-b border-gray-800 bg-gray-900/50 sticky top-0 z-50 backdrop-blur-md">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
             <div class="flex items-center gap-2 text-purple-500">
-                <i data-lucide="zap" class="w-8 h-8"></i>
-                <span class="text-2xl font-bold text-white tracking-tighter">FlashShare</span>
+                <i data-lucide="zap" class="w-6 h-6"></i>
+                <span class="text-xl font-bold text-white tracking-tight">FlashShare <span class="text-xs text-purple-400 font-normal ml-1">v2.0</span></span>
             </div>
             <div class="flex items-center gap-3">
-                <span class="text-xs text-gray-400 uppercase tracking-widest hidden sm:block">Your ID:</span>
-                <div class="bg-gray-800 px-4 py-2 rounded-full font-mono text-purple-400 font-bold border border-gray-700 shadow-inner" id="my-id">
-                    Generating...
+                <span class="text-xs text-gray-500 uppercase tracking-widest hidden sm:block">My ID:</span>
+                <div class="bg-gray-800 px-3 py-1.5 rounded-md font-mono text-purple-400 font-bold border border-gray-700 select-all cursor-pointer" id="my-id" onclick="copyId()">
+                    ...
                 </div>
             </div>
         </div>
     </nav>
 
-    <main class="max-w-4xl mx-auto p-6 mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+    <main class="max-w-5xl mx-auto p-4 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
         
-        <div class="glass rounded-3xl p-8 flex flex-col justify-between h-96 relative overflow-hidden group">
-            <div class="absolute top-0 right-0 p-32 bg-purple-600/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-            
-            <div>
-                <h2 class="text-2xl font-bold mb-2 flex items-center gap-2">
-                    <i data-lucide="link" class="w-6 h-6 text-purple-400"></i> Connect
-                </h2>
-                <p class="text-gray-400 text-sm mb-6">Enter your partner's ID to start a secure tunnel.</p>
-                
-                <div class="space-y-4">
-                    <input type="text" id="partner-id" placeholder="Enter Partner ID" 
-                        class="w-full bg-gray-950/50 border border-gray-700 rounded-xl px-4 py-4 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all text-center text-lg tracking-widest font-mono uppercase">
-                    
-                    <button onclick="connectToPeer()" id="connect-btn"
-                        class="w-full bg-white text-black font-bold py-4 rounded-xl hover:bg-gray-200 transition-transform active:scale-95 flex items-center justify-center gap-2">
-                        Connect Now <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                    </button>
-                </div>
+        <div class="glass rounded-2xl p-6 flex flex-col h-fit">
+            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                <i data-lucide="network" class="w-5 h-5 text-purple-400"></i> Connection
+            </h2>
+
+            <div id="status-box" class="bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 px-4 py-3 rounded-xl mb-6 flex items-center gap-3">
+                <div class="w-2.5 h-2.5 bg-yellow-500 rounded-full animate-pulse"></div>
+                <span class="text-sm font-medium">Waiting for partner...</span>
             </div>
 
-            <div class="mt-4">
-                <div id="status-indicator" class="flex items-center gap-2 text-yellow-500 bg-yellow-500/10 px-4 py-2 rounded-lg w-fit">
-                    <div class="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-                    <span class="text-sm font-medium">Waiting for connection...</span>
+            <div id="connect-ui" class="space-y-4">
+                <div class="relative">
+                    <input type="text" id="partner-id" placeholder="Enter Partner ID" 
+                        class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 pl-10 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all font-mono uppercase">
+                    <i data-lucide="hash" class="w-4 h-4 text-gray-500 absolute left-3 top-3.5"></i>
                 </div>
+                <button onclick="connectToPeer()" id="connect-btn"
+                    class="w-full bg-white text-black font-bold py-3 rounded-xl hover:bg-gray-200 transition-all flex items-center justify-center gap-2">
+                    Connect Device
+                </button>
             </div>
         </div>
 
-        <div class="glass rounded-3xl p-8 flex flex-col justify-center items-center h-96 relative border-dashed border-2 border-gray-700 hover:border-purple-500 transition-colors" id="drop-zone">
-            <input type="file" id="file-input" class="hidden" onchange="handleFileSelect(this)">
+        <div class="glass rounded-2xl p-6 min-h-[400px] flex flex-col relative overflow-hidden">
             
-            <div id="upload-ui" class="text-center cursor-pointer" onclick="document.getElementById('file-input').click()">
-                <div class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-gray-700 transition-colors">
-                    <i data-lucide="upload-cloud" class="w-10 h-10 text-purple-500"></i>
+            <div id="upload-view" class="flex-1 flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-gray-700 rounded-xl hover:border-purple-500/50 transition-colors cursor-pointer group" onclick="triggerFileSelect()">
+                <input type="file" id="file-input" class="hidden" onchange="handleFileSelect(this)">
+                <div class="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-purple-900/20">
+                    <i data-lucide="upload" class="w-8 h-8 text-purple-400"></i>
                 </div>
-                <h3 class="text-xl font-bold">Send Files</h3>
-                <p class="text-gray-500 text-sm mt-2">Click or Drag & Drop<br>Supports 10GB+</p>
+                <h3 class="text-lg font-bold text-gray-200">Send a File</h3>
+                <p class="text-gray-500 text-sm mt-1">Click to browse or drag & drop</p>
+                <p class="text-xs text-gray-600 mt-4">Optimized for Large Files (10GB+)</p>
             </div>
 
-            <div id="transfer-ui" class="hidden w-full space-y-4">
-                <div class="flex items-center gap-4 bg-gray-800 p-4 rounded-xl">
-                    <i data-lucide="file" class="w-8 h-8 text-purple-400"></i>
-                    <div class="flex-1 min-w-0">
-                        <p class="font-bold truncate" id="file-name">movie.mp4</p>
-                        <p class="text-xs text-gray-400" id="file-size">2.4 GB</p>
+            <div id="transfer-view" class="hidden flex-1 flex flex-col justify-center">
+                <div class="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+                    <div class="flex items-start gap-4 mb-6">
+                        <div class="w-12 h-12 bg-purple-600/20 rounded-lg flex items-center justify-center text-purple-400 shrink-0">
+                            <i data-lucide="file-check" class="w-6 h-6"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h4 class="font-bold text-lg truncate" id="tx-filename">movie.mp4</h4>
+                            <p class="text-sm text-gray-400" id="tx-filesize">2.4 GB</p>
+                        </div>
+                    </div>
+
+                    <div class="relative w-full bg-gray-900 rounded-full h-4 overflow-hidden mb-2">
+                        <div id="progress-fill" class="progress-fill bg-gradient-to-r from-purple-500 to-indigo-500 h-full w-0"></div>
+                    </div>
+                    
+                    <div class="flex justify-between text-xs font-mono text-gray-400">
+                        <span id="tx-percent">0%</span>
+                        <span id="tx-status">Initializing...</span>
+                    </div>
+
+                    <div class="mt-8 flex gap-3">
+                         <button id="btn-reset" onclick="resetUI()" class="hidden w-full bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg transition-colors font-medium">
+                            Send Another File
+                        </button>
                     </div>
                 </div>
+            </div>
 
-                <div class="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
-                    <div id="progress-bar" class="bg-purple-500 h-full w-0 progress-bar"></div>
-                </div>
-                <p class="text-center text-sm font-mono text-purple-300" id="progress-text">0%</p>
-                <p class="text-center text-xs text-gray-500" id="speed-text"></p>
+        </div>
+
+        <div class="lg:col-span-2">
+            <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 px-2">Transfer History</h3>
+            <div class="glass rounded-xl overflow-hidden">
+                <table class="w-full text-left text-sm text-gray-400">
+                    <thead class="bg-gray-900/50 text-gray-200 border-b border-gray-700">
+                        <tr>
+                            <th class="p-4 font-medium">File Name</th>
+                            <th class="p-4 font-medium">Size</th>
+                            <th class="p-4 font-medium">Type</th>
+                            <th class="p-4 font-medium">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-list" class="divide-y divide-gray-800">
+                        <tr class="text-center py-4"><td colspan="4" class="p-4 text-gray-600 italic">No transfers yet</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
+
     </main>
 
     <script>
-        // --- ICONS ---
+        // --- ICONS & SETUP ---
         lucide.createIcons();
 
-        // --- GLOBAL VARIABLES ---
+        // --- GLOBAL STATE ---
         let peer = null;
         let conn = null;
         let myId = "";
+        let transferStart = 0;
         
-        // DOM Elements
-        const statusEl = document.getElementById('status-indicator');
-        const connectBtn = document.getElementById('connect-btn');
-        const uploadUi = document.getElementById('upload-ui');
-        const transferUi = document.getElementById('transfer-ui');
-        const progressBar = document.getElementById('progress-bar');
-        const progressText = document.getElementById('progress-text');
+        // --- DOM ELEMENTS ---
+        const els = {
+            statusBox: document.getElementById('status-box'),
+            connectBtn: document.getElementById('connect-btn'),
+            partnerInput: document.getElementById('partner-id'),
+            uploadView: document.getElementById('upload-view'),
+            transferView: document.getElementById('transfer-view'),
+            filename: document.getElementById('tx-filename'),
+            filesize: document.getElementById('tx-filesize'),
+            progress: document.getElementById('progress-fill'),
+            percent: document.getElementById('tx-percent'),
+            status: document.getElementById('tx-status'),
+            resetBtn: document.getElementById('btn-reset'),
+            historyList: document.getElementById('history-list')
+        };
 
-        // --- 1. INITIALIZE PEER (Get ID) ---
-        // Generates a random 4-character ID for easier typing
-        function generateShortId() {
-            return Math.random().toString(36).substring(2, 6).toUpperCase();
-        }
-
+        // --- 1. NETWORK INIT ---
         function initPeer() {
-            const shortId = generateShortId();
-            // We use the public PeerJS cloud server. 
-            // NOTE: This requires internet to handshake, but data goes P2P.
+            const shortId = Math.random().toString(36).substring(2, 6).toUpperCase();
             peer = new Peer(shortId);
 
             peer.on('open', (id) => {
@@ -135,151 +162,200 @@
                 conn = connection;
                 setupConnection();
             });
-
-            peer.on('error', (err) => {
-                console.error(err);
-                alert("Connection Error: " + err.type);
-            });
+            
+            peer.on('error', err => alert("Network Error: " + err.type));
         }
-
         initPeer();
 
-        // --- 2. CONNECT TO PARTNER ---
         function connectToPeer() {
-            const partnerId = document.getElementById('partner-id').value.toUpperCase().trim();
-            if (!partnerId) return alert("Please enter an ID");
-            
-            conn = peer.connect(partnerId);
+            const pid = els.partnerInput.value.trim().toUpperCase();
+            if(!pid) return;
+            els.connectBtn.innerText = "Connecting...";
+            conn = peer.connect(pid);
             setupConnection();
         }
 
         function setupConnection() {
             conn.on('open', () => {
-                statusEl.className = "flex items-center gap-2 text-green-400 bg-green-500/10 px-4 py-2 rounded-lg w-fit";
-                statusEl.innerHTML = `<div class="w-2 h-2 bg-green-500 rounded-full"></div> Connected!`;
-                connectBtn.innerText = "Connected";
-                connectBtn.disabled = true;
-                connectBtn.classList.add('opacity-50');
+                // UI Update: Connected
+                els.statusBox.className = "bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-3 rounded-xl mb-6 flex items-center gap-3";
+                els.statusBox.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5"></i> <span class="font-bold">Connected securely</span>`;
+                lucide.createIcons();
+                els.connectBtn.innerText = "Connected";
+                els.connectBtn.disabled = true;
+                els.connectBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                document.getElementById('connect-ui').classList.add('hidden');
             });
 
-            conn.on('data', handleData);
+            conn.on('data', handleIncomingData);
+            
+            // Handle disconnect
+            conn.on('close', () => {
+                alert("Partner disconnected");
+                location.reload();
+            });
         }
 
-        // --- 3. SEND FILE LOGIC (CHUNKING) ---
-        const CHUNK_SIZE = 16 * 1024; // 16KB chunks to prevent congestion
+        // --- 2. FAST SEND LOGIC (OPTIMIZED) ---
+        // 64KB is a sweet spot for WebRTC (browser implementation dependent)
+        const CHUNK_SIZE = 64 * 1024; 
+
+        function triggerFileSelect() {
+            if(!conn) return alert("Please connect to a partner first!");
+            document.getElementById('file-input').click();
+        }
 
         async function handleFileSelect(input) {
             const file = input.files[0];
-            if (!file || !conn) return;
+            if (!file) return;
 
-            // Show UI
-            uploadUi.classList.add('hidden');
-            transferUi.classList.remove('hidden');
-            document.getElementById('file-name').innerText = file.name;
-            document.getElementById('file-size').innerText = formatBytes(file.size);
+            // UI Reset
+            els.uploadView.classList.add('hidden');
+            els.transferView.classList.remove('hidden');
+            els.resetBtn.classList.add('hidden');
+            els.filename.innerText = file.name;
+            els.filesize.innerText = formatBytes(file.size);
+            els.progress.style.width = '0%';
+            transferStart = Date.now();
 
-            // 1. Send Metadata
-            conn.send({
-                type: 'header',
-                name: file.name,
-                size: file.size,
-                mime: file.type
-            });
+            // Send Header
+            conn.send({ type: 'header', name: file.name, size: file.size, mime: file.type });
 
-            // 2. Read & Send Chunks
+            // Chunk Loop
             let offset = 0;
             const reader = new FileReader();
 
-            // Internal recursive function to handle backpressure
-            function readNextChunk() {
-                const slice = file.slice(offset, offset + CHUNK_SIZE);
-                reader.readAsArrayBuffer(slice);
-            }
-
-            reader.onload = (e) => {
+            reader.onload = async (e) => {
+                if(!conn) return;
                 const chunk = e.target.result;
                 
-                // Wait if buffer is full (Backpressure)
-                if (conn.dataChannel.bufferedAmount > 10 * 1024 * 1024) { // 10MB limit
-                    setTimeout(() => {
-                        conn.send(chunk);
-                        processProgress(chunk.byteLength);
-                    }, 50);
+                // --- CRITICAL SPEED FIX ---
+                // We check buffer. If full, we wait slightly. If empty, we blast.
+                // The 'await new Promise' with low timeout is non-blocking but fast.
+                while (conn.dataChannel.bufferedAmount > 10 * 1024 * 1024) { // 10MB Buffer Limit
+                    await new Promise(r => setTimeout(r, 5)); 
+                }
+
+                conn.send(chunk);
+                
+                offset += chunk.byteLength;
+                updateProgress(offset, file.size);
+
+                if (offset < file.size) {
+                    readNext();
                 } else {
-                    conn.send(chunk);
-                    processProgress(chunk.byteLength);
+                    finishTransfer(file.name, file.size, 'Sent');
                 }
             };
 
-            function processProgress(length) {
-                offset += length;
-                const percent = ((offset / file.size) * 100).toFixed(1);
-                progressBar.style.width = percent + '%';
-                progressText.innerText = percent + '%';
-
-                if (offset < file.size) {
-                    readNextChunk();
-                } else {
-                    console.log("File Sent!");
-                }
+            function readNext() {
+                const slice = file.slice(offset, offset + CHUNK_SIZE);
+                reader.readAsArrayBuffer(slice);
             }
-
-            readNextChunk(); // Start loop
+            
+            readNext(); // Start
         }
 
-        // --- 4. RECEIVE FILE LOGIC ---
-        let incomingFile = null;
+        // --- 3. RECEIVE LOGIC ---
+        let incoming = null;
         let receivedBytes = 0;
-        let fileWriter = null;
+        let writer = null;
 
-        function handleData(data) {
-            // Case A: Metadata (Header)
+        function handleIncomingData(data) {
+            // Header
             if (data.type === 'header') {
-                incomingFile = data;
+                incoming = data;
                 receivedBytes = 0;
+                els.uploadView.classList.add('hidden');
+                els.transferView.classList.remove('hidden');
+                els.resetBtn.classList.add('hidden');
+                els.filename.innerText = data.name;
+                els.filesize.innerText = formatBytes(data.size);
                 
-                // Setup StreamSaver to write directly to disk
                 const fileStream = streamSaver.createWriteStream(data.name, { size: data.size });
-                fileWriter = fileStream.getWriter();
-
-                // Update UI
-                uploadUi.classList.add('hidden');
-                transferUi.classList.remove('hidden');
-                document.getElementById('file-name').innerText = "Receiving: " + data.name;
-                document.getElementById('file-size').innerText = formatBytes(data.size);
+                writer = fileStream.getWriter();
+                transferStart = Date.now();
                 return;
             }
 
-            // Case B: File Chunk (ArrayBuffer)
-            if (fileWriter) {
-                // We received raw bytes
-                fileWriter.write(new Uint8Array(data));
+            // Chunks
+            if (writer) {
+                writer.write(new Uint8Array(data));
                 receivedBytes += data.byteLength;
+                updateProgress(receivedBytes, incoming.size);
 
-                // Update Progress
-                const percent = ((receivedBytes / incomingFile.size) * 100).toFixed(1);
-                progressBar.style.width = percent + '%';
-                progressText.innerText = percent + '%';
-
-                // Check Completion
-                if (receivedBytes === incomingFile.size) {
-                    fileWriter.close();
-                    fileWriter = null;
-                    incomingFile = null;
-                    document.getElementById('file-name').innerText = "Download Complete!";
-                    progressBar.classList.add('bg-green-500');
+                if (receivedBytes === incoming.size) {
+                    writer.close();
+                    finishTransfer(incoming.name, incoming.size, 'Received');
+                    writer = null;
+                    incoming = null;
                 }
             }
         }
 
-        // Helper: Format Bytes
-        function formatBytes(bytes, decimals = 2) {
-            if (!+bytes) return '0 Bytes';
+        // --- 4. UI HELPERS ---
+        function updateProgress(current, total) {
+            const pct = ((current / total) * 100).toFixed(1);
+            els.progress.style.width = `${pct}%`;
+            els.percent.innerText = `${pct}%`;
+            
+            // Calculate Speed
+            const elapsed = (Date.now() - transferStart) / 1000; // seconds
+            const speed = (current / 1024 / 1024) / elapsed; // MB/s
+            els.status.innerText = `Speed: ${speed.toFixed(1)} MB/s`;
+        }
+
+        function finishTransfer(name, size, type) {
+            els.status.innerText = "Completed Successfully";
+            els.progress.classList.add('bg-green-500');
+            els.resetBtn.classList.remove('hidden');
+            
+            // Add to History
+            addToHistory(name, size, type);
+        }
+
+        function resetUI() {
+            els.transferView.classList.add('hidden');
+            els.uploadView.classList.remove('hidden');
+            document.getElementById('file-input').value = ''; // clear input
+            els.progress.classList.remove('bg-green-500');
+        }
+
+        function addToHistory(name, size, type) {
+            const isSent = type === 'Sent';
+            const row = `
+                <tr class="border-b border-gray-800 hover:bg-gray-900/50 transition-colors">
+                    <td class="p-4 flex items-center gap-2">
+                        <i data-lucide="${isSent ? 'arrow-up-right' : 'arrow-down-left'}" class="w-4 h-4 ${isSent ? 'text-blue-400' : 'text-green-400'}"></i>
+                        ${name}
+                    </td>
+                    <td class="p-4 font-mono text-xs">${formatBytes(size)}</td>
+                    <td class="p-4">
+                        <span class="px-2 py-1 rounded text-xs font-bold ${isSent ? 'bg-blue-900/30 text-blue-400' : 'bg-green-900/30 text-green-400'}">${type}</span>
+                    </td>
+                    <td class="p-4 text-green-500 text-xs">Success</td>
+                </tr>
+            `;
+            
+            // Remove "No transfers" msg if exists
+            if(els.historyList.children[0]?.innerText.includes('No transfers')) {
+                els.historyList.innerHTML = '';
+            }
+            els.historyList.insertAdjacentHTML('afterbegin', row);
+            lucide.createIcons();
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
             const k = 1024;
-            const dm = decimals < 0 ? 0 : decimals;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function copyId() {
+            navigator.clipboard.writeText(myId);
+            alert("ID Copied!");
         }
     </script>
 </body>
