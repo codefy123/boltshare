@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FlashShare | Enterprise</title>
+    <title>FlashShare | Pro</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -11,326 +11,319 @@
     <script src="https://cdn.jsdelivr.net/npm/streamsaver@2.0.6/StreamSaver.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/web-streams-polyfill@2.0.2/dist/polyfill.min.js"></script>
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --bg: #030712; /* Slate 950 */
-            --panel: #0f172a; /* Slate 900 */
-            --border: #1e293b; /* Slate 800 */
-            --primary: #6366f1; /* Indigo 500 */
+            --bg-dark: #020617;     /* Slate 950 */
+            --glass-bg: rgba(15, 23, 42, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent: #818cf8;      /* Indigo 400 */
+            --accent-glow: rgba(129, 140, 248, 0.2);
         }
 
         body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: var(--bg);
-            color: #e2e8f0;
-            overflow-x: hidden;
+            font-family: 'Outfit', sans-serif; 
+            background-color: var(--bg-dark);
+            color: #f1f5f9;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.08) 0%, transparent 25%), 
+                radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.08) 0%, transparent 25%);
+            height: 100vh;
+            overflow: hidden;
         }
 
-        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .font-mono { font-family: 'Space Grotesk', monospace; }
         
-        /* Minimalist Panel */
-        .glass-panel { 
-            background: var(--panel); 
-            border: 1px solid var(--border);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        /* Ultra Premium Glass Panel */
+        .glass { 
+            background: var(--glass-bg); 
+            backdrop-filter: blur(24px); 
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
         }
 
         /* Animations */
-        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
-        .slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .view-transition { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .hidden-view { opacity: 0; pointer-events: none; position: absolute; transform: scale(0.95) translateY(10px); }
+        .active-view { opacity: 1; pointer-events: auto; position: relative; transform: scale(1) translateY(0); }
+
+        /* Custom Input */
+        .otp-input { 
+            letter-spacing: 0.5em; 
+            text-align: center; 
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+        .otp-input:focus { 
+            border-color: var(--accent); 
+            box-shadow: 0 0 0 4px var(--accent-glow); 
+            outline: none; 
+        }
 
         /* Custom Toast */
-        #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
-        .toast { pointer-events: auto; background: #1e293b; border: 1px solid #334155; padding: 12px 20px; rounded-lg; display: flex; items-center; gap: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; min-width: 300px; }
-        .toast.error { border-left: 4px solid #ef4444; }
-        .toast.success { border-left: 4px solid #10b981; }
-        @keyframes toastIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-10px); } }
-
-        /* Inputs */
-        .input-minimal { background: transparent; border: none; border-bottom: 2px solid var(--border); color: white; padding: 10px 0; width: 100%; border-radius: 0; transition: border-color 0.3s; }
-        .input-minimal:focus { outline: none; border-color: var(--primary); }
+        .toast {
+            animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes slideDown { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        /* Loader Pulse */
+        .pulse-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid var(--accent);
+            opacity: 0;
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(1.5); opacity: 0; } }
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="flex flex-col">
 
-    <nav class="w-full p-6 flex justify-between items-center z-50">
-        <div class="flex items-center gap-2">
-            <div class="w-2 h-2 bg-indigo-500 rounded-full"></div>
-            <h1 class="font-semibold text-sm tracking-wide text-slate-300">FlashShare <span class="text-slate-600">Ent.</span></h1>
+    <div id="toast-container" class="fixed top-0 left-0 w-full z-[100] flex flex-col items-center gap-2 p-4 pointer-events-none"></div>
+
+    <section id="view-home" class="view-transition active-view w-full h-full flex flex-col items-center justify-center p-6">
+        
+        <div class="absolute top-8 left-0 w-full text-center">
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/5 bg-white/5 backdrop-blur-md">
+                <div class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
+                <span class="text-xs font-medium tracking-wide text-indigo-200/80">P2P ENCRYPTED NETWORK</span>
+            </div>
         </div>
-        <div class="text-xs font-mono text-slate-500" id="nav-id">Initializing...</div>
-    </nav>
 
-    <div id="toast-container"></div>
-
-    <section id="view-home" class="flex-1 flex flex-col items-center justify-center p-6 slide-up">
-        <div class="w-full max-w-sm">
+        <div class="w-full max-w-[360px] relative z-10">
             
-            <div class="glass-panel rounded-2xl p-8 space-y-8 relative overflow-hidden">
-                
-                <div>
-                    <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">Your Device ID</p>
-                    <div class="flex items-end justify-between">
-                        <h2 class="text-4xl font-mono font-medium text-white tracking-tighter" id="my-code">....</h2>
-                        <button onclick="copyCode()" class="text-slate-500 hover:text-white transition-colors pb-2">
-                            <i data-lucide="copy" class="w-4 h-4"></i>
+            <div class="glass rounded-3xl p-1 overflow-hidden">
+                <div class="bg-slate-900/40 rounded-[20px] p-8">
+                    
+                    <div class="text-center mb-10 relative">
+                        <div class="w-20 h-20 mx-auto bg-indigo-500/10 rounded-full flex items-center justify-center mb-4 relative">
+                            <div class="pulse-ring"></div>
+                            <i data-lucide="wifi" class="w-8 h-8 text-indigo-400"></i>
+                        </div>
+                        <h2 class="text-xs font-bold text-slate-500 tracking-widest uppercase mb-2">Your Device Code</h2>
+                        <div class="flex items-center justify-center gap-3" onclick="copyCode()">
+                            <span class="text-4xl font-mono font-bold text-white tracking-tighter cursor-pointer hover:text-indigo-300 transition-colors" id="my-code">....</span>
+                            <i data-lucide="copy" class="w-4 h-4 text-slate-600"></i>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="relative">
+                            <input type="tel" id="partner-code" maxlength="4" placeholder="0000" 
+                                class="otp-input w-full rounded-xl py-4 text-2xl font-mono font-bold text-white placeholder-slate-700">
+                        </div>
+                        
+                        <button onclick="connectToPeer()" id="btn-connect"
+                            class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-4 rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2">
+                            <span>Connect Devices</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
                         </button>
                     </div>
+
                 </div>
-
-                <div class="h-px bg-slate-800 w-full"></div>
-
-                <div class="space-y-6">
-                    <div>
-                        <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">Connect to Partner</p>
-                        <input type="text" id="partner-code" maxlength="4" placeholder="Enter 4-Digit ID" 
-                            class="input-minimal font-mono text-xl placeholder:text-slate-700 uppercase">
-                    </div>
-
-                    <button onclick="initiateConnection()" id="btn-connect"
-                        class="w-full bg-white text-slate-950 hover:bg-slate-200 font-medium py-3 rounded-lg transition-all active:scale-[0.98]">
-                        Secure Connect
-                    </button>
-                </div>
-
-                <div id="loader-overlay" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center hidden">
-                    <div class="flex flex-col items-center gap-3">
-                        <div class="w-5 h-5 border-2 border-slate-600 border-t-white rounded-full animate-spin"></div>
-                        <span class="text-xs text-slate-300 font-medium">Verifying Network...</span>
-                    </div>
-                </div>
-
             </div>
-            
-            <p class="text-center text-xs text-slate-600 mt-6">
-                Same-Network Connection Only. <br> End-to-End Encrypted.
+
+            <p class="text-center text-xs text-slate-600 mt-8 leading-relaxed">
+                Connect via Hotspot or WiFi. <br> Both devices must use this interface.
             </p>
         </div>
     </section>
 
-    <section id="view-dashboard" class="hidden flex-1 flex flex-col p-4 md:p-8 fade-in h-screen">
+    <section id="view-dashboard" class="view-transition hidden-view w-full h-full flex flex-col p-4 md:p-8">
         
-        <div class="flex items-center justify-between mb-8 max-w-4xl mx-auto w-full">
+        <header class="flex justify-between items-center mb-6">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 text-indigo-400">
-                    <i data-lucide="laptop" class="w-5 h-5"></i>
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                    <i data-lucide="link-2" class="w-5 h-5 text-emerald-400"></i>
                 </div>
                 <div>
-                    <p class="text-xs text-slate-500 uppercase font-bold">Connected To</p>
-                    <p class="text-sm text-white font-medium font-mono" id="dash-partner">...</p>
+                    <h3 class="text-sm font-bold text-white">Connected</h3>
+                    <p class="text-xs text-slate-500 font-mono" id="dash-partner-id">ID: ....</p>
                 </div>
             </div>
-            <button onclick="disconnect()" class="text-xs text-red-400 hover:text-red-300 transition-colors border border-red-900/50 bg-red-950/20 px-3 py-1.5 rounded-md">
-                Disconnect
+            <button onclick="disconnect()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2.5 rounded-lg transition-colors border border-red-500/10">
+                <i data-lucide="power" class="w-5 h-5"></i>
             </button>
-        </div>
+        </header>
 
-        <div class="flex-1 max-w-4xl mx-auto w-full flex flex-col gap-6">
+        <main class="flex-1 flex flex-col gap-4 relative overflow-hidden">
             
-            <div onclick="triggerFileSelect()" class="glass-panel border-dashed border-slate-700 hover:border-indigo-500/50 rounded-xl flex-1 max-h-[300px] flex flex-col items-center justify-center cursor-pointer group transition-all">
+            <div onclick="triggerFileSelect()" class="glass rounded-2xl border-dashed border-slate-700 hover:border-indigo-500/50 flex-1 max-h-[220px] flex flex-col items-center justify-center cursor-pointer group transition-all duration-300 hover:bg-slate-800/40">
                 <input type="file" id="file-input" class="hidden" multiple onchange="handleFileSelect(this)">
-                <div class="w-12 h-12 bg-slate-900 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border border-slate-800">
-                    <i data-lucide="plus" class="w-6 h-6 text-indigo-400"></i>
+                <div class="w-14 h-14 bg-indigo-600 rounded-full flex items-center justify-center mb-3 shadow-lg shadow-indigo-600/30 group-hover:scale-110 transition-transform">
+                    <i data-lucide="upload" class="w-6 h-6 text-white"></i>
                 </div>
-                <h3 class="text-lg font-medium text-slate-200">Send Files</h3>
-                <p class="text-xs text-slate-500 mt-1">Click to browse</p>
+                <h2 class="text-lg font-bold text-white">Tap to Send</h2>
+                <p class="text-xs text-slate-400 mt-1">Photos, Videos, Large Files</p>
             </div>
 
-            <div id="transfer-container" class="hidden glass-panel rounded-xl p-0 overflow-hidden flex-1 min-h-[200px] flex flex-col">
-                <div class="p-4 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Transfers</h3>
-                    <span class="text-[10px] font-mono text-indigo-400" id="speed-indicator">0.0 MB/s</span>
+            <div class="glass rounded-2xl flex-1 flex flex-col overflow-hidden min-h-[300px]">
+                <div class="p-4 border-b border-slate-800/50 bg-slate-900/30 flex justify-between items-center">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Recent Activity</span>
+                    <span class="text-[10px] bg-slate-800 px-2 py-1 rounded text-slate-400 font-mono" id="speed-meter">0 MB/s</span>
                 </div>
-                <div id="file-list" class="p-2 overflow-y-auto flex-1 space-y-2"></div>
+                
+                <div id="file-list" class="p-3 overflow-y-auto flex-1 space-y-3">
+                    <div id="empty-state" class="h-full flex flex-col items-center justify-center opacity-20">
+                        <i data-lucide="layers" class="w-12 h-12 mb-2"></i>
+                        <p class="text-xs">No active transfers</p>
+                    </div>
+                </div>
             </div>
 
-        </div>
+        </main>
     </section>
 
-    <template id="file-row-template">
-        <div class="bg-slate-900/50 rounded-lg p-3 border border-slate-800 flex items-center gap-3 group">
-            <div class="w-8 h-8 rounded bg-slate-950 flex items-center justify-center shrink-0 text-slate-400 file-icon">
-                <i data-lucide="file" class="w-4 h-4"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-                <div class="flex justify-between items-center mb-1">
-                    <p class="text-xs text-slate-200 font-medium truncate pr-2 file-name">File.txt</p>
-                    <span class="text-[10px] text-slate-500 font-mono file-size">0 MB</span>
+    <template id="file-template">
+        <div class="bg-slate-800/40 rounded-xl p-3 border border-slate-700/50 relative overflow-hidden group">
+            <div class="flex items-center gap-3 relative z-10">
+                <div class="w-10 h-10 rounded-lg bg-slate-900 flex items-center justify-center shrink-0 border border-slate-700 icon-box">
+                    <i data-lucide="file" class="w-5 h-5 text-slate-400"></i>
                 </div>
-                <div class="h-1 bg-slate-800 rounded-full overflow-hidden">
-                    <div class="progress-bar h-full bg-indigo-500 w-0 transition-all duration-200"></div>
+                
+                <div class="flex-1 min-w-0">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <p class="text-sm font-medium text-slate-200 truncate pr-2 file-name">filename.ext</p>
+                        <button class="btn-cancel text-slate-500 hover:text-red-400 transition-colors">
+                            <i data-lucide="x-circle" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <div class="h-1.5 flex-1 bg-slate-900 rounded-full overflow-hidden">
+                            <div class="progress-bar h-full bg-indigo-500 w-0 rounded-full transition-all duration-300"></div>
+                        </div>
+                        <span class="text-[10px] font-mono text-slate-400 file-pct">0%</span>
+                    </div>
                 </div>
             </div>
-            <button class="btn-cancel text-slate-600 hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <i data-lucide="x" class="w-4 h-4"></i>
-            </button>
         </div>
     </template>
 
     <script>
-        // --- 1. CONFIG & UTILS ---
+        // --- CONFIG & UTILS ---
         lucide.createIcons();
         
-        // Generate Identity
         const myCode = Math.floor(1000 + Math.random() * 9000).toString();
-        const myName = "Device-" + myCode; // Simplified identity
-
-        // DOM Elements
+        
+        // DOM
         const els = {
-            views: { home: document.getElementById('view-home'), dash: document.getElementById('view-dashboard') },
+            viewHome: document.getElementById('view-home'),
+            viewDash: document.getElementById('view-dashboard'),
             myCode: document.getElementById('my-code'),
-            navId: document.getElementById('nav-id'),
             partnerInput: document.getElementById('partner-code'),
-            dashPartner: document.getElementById('dash-partner'),
+            dashId: document.getElementById('dash-partner-id'),
             fileList: document.getElementById('file-list'),
-            transferBox: document.getElementById('transfer-container'),
-            speed: document.getElementById('speed-indicator'),
-            loader: document.getElementById('loader-overlay'),
-            toastContainer: document.getElementById('toast-container')
+            emptyState: document.getElementById('empty-state'),
+            speed: document.getElementById('speed-meter'),
+            toastBox: document.getElementById('toast-container'),
+            btnConnect: document.getElementById('btn-connect')
         };
 
-        // UI Initialization
         els.myCode.innerText = myCode;
-        els.navId.innerText = `ID: ${myCode}`;
 
-        // Global State
+        // State
         let peer = null;
         let conn = null;
-        let activeTransfers = {}; // { id: { cancel: fn, type: 'up/down', writer, etc } }
+        let activeTransfers = {}; 
 
-        // --- 2. NOTIFICATION SYSTEM (Replacement for Alert) ---
-        function showToast(msg, type = 'normal') {
-            const el = document.createElement('div');
-            el.className = `toast ${type}`;
+        // --- TOAST SYSTEM ---
+        function showToast(msg, type = 'neutral') {
+            const t = document.createElement('div');
+            t.className = "toast pointer-events-auto bg-slate-800/90 backdrop-blur-md border border-slate-700 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-sm font-medium";
             
-            const icon = type === 'error' ? 'alert-circle' : (type === 'success' ? 'check-circle' : 'info');
-            const color = type === 'error' ? 'text-red-400' : (type === 'success' ? 'text-emerald-400' : 'text-slate-400');
+            let icon = type === 'error' ? 'alert-octagon' : 'check-circle-2';
+            let color = type === 'error' ? 'text-red-400' : 'text-emerald-400';
             
-            el.innerHTML = `
-                <i data-lucide="${icon}" class="w-5 h-5 ${color}"></i>
-                <span class="text-sm text-slate-200 font-medium">${msg}</span>
-            `;
-            
-            els.toastContainer.appendChild(el);
+            t.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5 ${color}"></i> ${msg}`;
+            els.toastBox.appendChild(t);
             lucide.createIcons();
 
-            // Auto remove
             setTimeout(() => {
-                el.style.animation = 'toastOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards';
-                setTimeout(() => el.remove(), 300);
+                t.style.opacity = '0';
+                t.style.transform = 'translateY(-20px)';
+                setTimeout(() => t.remove(), 300);
             }, 3000);
         }
 
-        // --- 3. PEERJS SETUP ---
+        // --- PEERJS INIT ---
         function initPeer() {
+            // Using default cloud server. 
+            // NOTE: For purely offline LAN without internet, you need a local PeerServer.
+            // But for Hotspot with Mobile Data (standard use case), this works perfectly.
             peer = new Peer(myCode);
-            
-            peer.on('open', (id) => console.log('Peer Ready:', id));
+
+            peer.on('open', (id) => console.log('My ID:', id));
             
             peer.on('connection', (connection) => {
-                // Incoming Connection Request
-                handleIncomingConnection(connection);
+                // When someone connects to ME
+                handleConnection(connection);
             });
 
             peer.on('error', (err) => {
                 console.error(err);
-                if(err.type === 'peer-unavailable') showToast("Device not found. Check ID.", 'error');
-                else showToast("Connection Error", 'error');
-                els.loader.classList.add('hidden');
+                showToast("Connection Error. Refreshing...", 'error');
+                setTimeout(() => location.reload(), 2000);
             });
         }
         initPeer();
 
-        // --- 4. CONNECTION LOGIC (With Strict IP Check) ---
+        // --- CONNECTION LOGIC ---
         
-        async function getPublicIP() {
-            try {
-                const res = await fetch('https://api.ipify.org?format=json');
-                const data = await res.json();
-                return data.ip;
-            } catch (e) {
-                console.error("IP Fetch Failed", e);
-                return "unknown"; // Fallback for offline LAN setups
-            }
-        }
-
-        async function initiateConnection() {
+        function connectToPeer() {
             const code = els.partnerInput.value.trim();
-            if(code.length !== 4) return showToast("Enter a valid 4-digit code", 'error');
-            if(code === myCode) return showToast("Cannot connect to yourself", 'error');
+            if(code.length !== 4) return showToast("Enter 4-digit Code", 'error');
+            
+            els.btnConnect.innerHTML = `<span class="animate-spin">⏳</span> Connecting...`;
+            
+            const connection = peer.connect(code);
+            
+            // If connection fails immediately
+            setTimeout(() => {
+                if(!conn || !conn.open) {
+                    els.btnConnect.innerHTML = `<span>Connect Devices</span> <i data-lucide="arrow-right" class="w-4 h-4"></i>`;
+                    lucide.createIcons();
+                }
+            }, 5000);
 
-            // 1. Show UI Loader
-            els.loader.classList.remove('hidden');
-
-            // 2. Fetch My IP
-            const myIP = await getPublicIP();
-
-            // 3. Connect with Metadata (Handshake)
-            const connection = peer.connect(code, { 
-                metadata: { ip: myIP } 
-            });
-
-            setupConnectionEvents(connection, myIP, true);
+            handleConnection(connection);
         }
 
-        async function handleIncomingConnection(connection) {
-             // 1. Fetch My IP to compare
-             const myIP = await getPublicIP();
-             setupConnectionEvents(connection, myIP, false);
-        }
-
-        function setupConnectionEvents(connection, myIP, isInitiator) {
+        // UNIFIED CONNECTION HANDLER (Used by both Host and Client)
+        function handleConnection(connection) {
             conn = connection;
 
             conn.on('open', () => {
-                // Handshake Verification
-                const partnerIP = conn.metadata?.ip;
+                // Both users execute this when connection is established
+                activateDashboard(conn.peer);
                 
-                // STRICT CHECK: Reject if IPs don't match (and neither is unknown)
-                if(partnerIP && myIP && partnerIP !== "unknown" && myIP !== "unknown" && partnerIP !== myIP) {
-                    showToast("Security Block: Different Networks", 'error');
-                    setTimeout(() => {
-                        conn.send({ type: 'error', msg: 'Network Mismatch' });
-                        conn.close();
-                        resetUI();
-                    }, 500);
-                    return;
-                }
-
-                // Success
-                els.loader.classList.add('hidden');
-                switchToDashboard(conn.peer);
-                showToast("Secure Connection Established", 'success');
+                // Reset Button (if initiator)
+                els.btnConnect.innerHTML = `<span>Connect Devices</span> <i data-lucide="arrow-right" class="w-4 h-4"></i>`;
+                lucide.createIcons();
             });
 
-            conn.on('data', processData);
+            conn.on('data', handleData);
             
             conn.on('close', () => {
-                showToast("Partner Disconnected", 'normal');
-                setTimeout(() => location.reload(), 1500);
-            });
-
-            conn.on('error', () => {
-                showToast("Connection Lost", 'error');
-                resetUI();
+                showToast("Partner Disconnected", 'error');
+                setTimeout(() => location.reload(), 1000);
             });
         }
 
-        function switchToDashboard(partnerId) {
-            els.views.home.classList.add('hidden');
-            els.views.dash.classList.remove('hidden');
-            els.dashPartner.innerText = `ID: ${partnerId}`;
-        }
-
-        function resetUI() {
-            els.loader.classList.add('hidden');
-            conn = null;
+        function activateDashboard(partnerId) {
+            els.viewHome.classList.remove('active-view');
+            els.viewHome.classList.add('hidden-view');
+            
+            els.viewDash.classList.remove('hidden-view');
+            els.viewDash.classList.add('active-view');
+            
+            els.dashId.innerText = `Connected: ${partnerId}`;
+            showToast("Secure Link Established");
         }
 
         function disconnect() {
@@ -338,27 +331,26 @@
             location.reload();
         }
 
-        // --- 5. FILE TRANSFER LOGIC ---
+        // --- FILE TRANSFER CORE ---
 
         function triggerFileSelect() { document.getElementById('file-input').click(); }
 
         function handleFileSelect(input) {
             const files = Array.from(input.files);
             if(!files.length) return;
-            els.transferBox.classList.remove('hidden');
             files.forEach(startUpload);
-            input.value = ''; 
+            input.value = '';
         }
 
-        // A. UPLOAD
+        // UPLOAD
         async function startUpload(file) {
-            const txId = Date.now() + Math.random().toString(36).substr(2, 5);
-            createFileRow(txId, file.name, file.size, 'up');
-
+            const txId = Date.now().toString(36);
+            createFileRow(txId, file.name, file.size, 'upload');
+            
             conn.send({ type: 'header', id: txId, name: file.name, size: file.size });
 
             let offset = 0;
-            const CHUNK = 64 * 1024; 
+            const CHUNK = 64 * 1024; // 64KB
             const reader = new FileReader();
             let isCancelled = false;
 
@@ -366,21 +358,28 @@
                 cancel: () => {
                     isCancelled = true;
                     conn.send({ type: 'cancel', id: txId });
-                    removeFileRow(txId);
-                    showToast("Transfer Cancelled", 'normal');
+                    removeRow(txId);
+                    showToast("Cancelled");
                 }
             };
 
-            let lastUpdate = Date.now();
+            let lastTime = Date.now();
             let bytesSince = 0;
 
             reader.onload = async (e) => {
                 if(isCancelled || !conn) return;
                 const chunk = e.target.result;
 
-                // Backpressure
-                while(conn.dataChannel.bufferedAmount > 15 * 1024 * 1024) {
-                    await new Promise(r => setTimeout(r, 10));
+                // Backpressure to prevent memory crash
+                if (conn.dataChannel.bufferedAmount > 10 * 1024 * 1024) {
+                    await new Promise(r => {
+                        const check = setInterval(() => {
+                            if (conn.dataChannel.bufferedAmount < 2 * 1024 * 1024) {
+                                clearInterval(check);
+                                r();
+                            }
+                        }, 50);
+                    });
                 }
 
                 conn.send({ type: 'chunk', id: txId, data: chunk });
@@ -388,35 +387,28 @@
                 bytesSince += chunk.byteLength;
 
                 const now = Date.now();
-                if(now - lastUpdate > 500) {
-                    const speed = (bytesSince / 1024 / 1024) / ((now - lastUpdate) / 1000);
-                    updateRow(txId, offset, file.size);
+                if(now - lastTime > 500) {
+                    const speed = (bytesSince / 1024 / 1024) / ((now - lastTime) / 1000);
+                    updateProgress(txId, offset, file.size);
                     els.speed.innerText = speed.toFixed(1) + " MB/s";
-                    lastUpdate = now;
+                    lastTime = now;
                     bytesSince = 0;
                 }
 
                 if(offset < file.size) {
-                    readNext();
+                    reader.readAsArrayBuffer(file.slice(offset, offset + CHUNK));
                 } else {
-                    completeTransfer(txId);
+                    markComplete(txId);
                 }
             };
-
-            const readNext = () => reader.readAsArrayBuffer(file.slice(offset, offset + CHUNK));
-            readNext();
+            
+            reader.readAsArrayBuffer(file.slice(0, CHUNK));
         }
 
-        // B. DOWNLOAD
-        function processData(data) {
-            if(data.type === 'error') {
-                showToast(data.msg, 'error');
-                return;
-            }
-
+        // DOWNLOAD & DATA HANDLER
+        function handleData(data) {
             if(data.type === 'header') {
-                els.transferBox.classList.remove('hidden');
-                createFileRow(data.id, data.name, data.size, 'down');
+                createFileRow(data.id, data.name, data.size, 'download');
                 
                 const fileStream = streamSaver.createWriteStream(data.name, { size: data.size });
                 const writer = fileStream.getWriter();
@@ -425,65 +417,69 @@
                     writer: writer,
                     received: 0,
                     size: data.size,
-                    lastUpdate: Date.now(),
+                    lastTime: Date.now(),
                     bytesSince: 0,
                     cancel: () => {
                         writer.abort();
                         conn.send({ type: 'cancel', id: data.id });
-                        removeFileRow(data.id);
-                        showToast("Transfer Cancelled", 'normal');
+                        removeRow(data.id);
+                        showToast("Cancelled");
                     }
                 };
             }
             else if(data.type === 'chunk') {
-                const session = activeTransfers[data.id];
-                if(session && session.writer) {
+                const tx = activeTransfers[data.id];
+                if(tx && tx.writer) {
                     const arr = new Uint8Array(data.data);
-                    session.writer.write(arr);
-                    session.received += arr.length;
-                    session.bytesSince += arr.length;
+                    tx.writer.write(arr);
+                    tx.received += arr.length;
+                    tx.bytesSince += arr.length;
 
                     const now = Date.now();
-                    if(now - session.lastUpdate > 500) {
-                        const speed = (session.bytesSince / 1024 / 1024) / ((now - session.lastUpdate) / 1000);
-                        updateRow(data.id, session.received, session.size);
+                    if(now - tx.lastTime > 500) {
+                        const speed = (tx.bytesSince / 1024 / 1024) / ((now - tx.lastTime) / 1000);
+                        updateProgress(data.id, tx.received, tx.size);
                         els.speed.innerText = speed.toFixed(1) + " MB/s";
-                        session.lastUpdate = now;
-                        session.bytesSince = 0;
+                        tx.lastTime = now;
+                        tx.bytesSince = 0;
                     }
 
-                    if(session.received === session.size) {
-                        session.writer.close();
-                        completeTransfer(data.id);
+                    if(tx.received === tx.size) {
+                        tx.writer.close();
+                        markComplete(data.id);
                     }
                 }
             }
             else if(data.type === 'cancel') {
-                // Partner cancelled
                 if(activeTransfers[data.id]) {
                     if(activeTransfers[data.id].writer) activeTransfers[data.id].writer.abort();
-                    removeFileRow(data.id);
-                    showToast("Partner Cancelled Transfer", 'normal');
-                    delete activeTransfers[data.id];
+                    removeRow(data.id);
+                    showToast("Partner Cancelled");
                 }
             }
         }
 
-        // --- 6. UI HELPERS ---
+        // --- UI MANAGERS ---
 
         function createFileRow(id, name, size, type) {
-            const tmpl = document.getElementById('file-row-template').content.cloneNode(true);
+            els.emptyState.classList.add('hidden');
+            const tmpl = document.getElementById('file-template').content.cloneNode(true);
             const el = tmpl.querySelector('div');
             el.id = `tx-${id}`;
-            el.querySelector('.file-name').innerText = name;
-            el.querySelector('.file-size').innerText = formatBytes(size);
             
-            // Icon Color
-            const ico = el.querySelector('.file-icon');
-            if(type === 'up') ico.classList.add('text-indigo-400');
-            else ico.classList.add('text-emerald-400');
+            el.querySelector('.file-name').innerText = name;
+            
+            const iconBox = el.querySelector('.icon-box');
+            const icon = el.querySelector('i');
+            
+            if(type === 'upload') {
+                iconBox.classList.add('text-indigo-400');
+                icon.setAttribute('data-lucide', 'arrow-up');
+            } else {
+                iconBox.classList.add('text-emerald-400');
+                icon.setAttribute('data-lucide', 'arrow-down');
+            }
 
-            // Cancel Binding
             el.querySelector('.btn-cancel').onclick = () => {
                 if(activeTransfers[id]) activeTransfers[id].cancel();
             };
@@ -492,43 +488,36 @@
             lucide.createIcons();
         }
 
-        function updateRow(id, current, total) {
+        function updateProgress(id, current, total) {
             const el = document.getElementById(`tx-${id}`);
             if(!el) return;
-            const pct = ((current / total) * 100).toFixed(0) + "%";
-            el.querySelector('.progress-bar').style.width = pct;
+            const pct = Math.round((current/total) * 100);
+            el.querySelector('.progress-bar').style.width = pct + "%";
+            el.querySelector('.file-pct').innerText = pct + "%";
         }
 
-        function completeTransfer(id) {
+        function markComplete(id) {
             const el = document.getElementById(`tx-${id}`);
             if(!el) return;
             el.querySelector('.progress-bar').classList.add('bg-emerald-500');
-            el.querySelector('.file-size').innerText = "Completed";
-            el.querySelector('.file-size').classList.add('text-emerald-400');
+            el.querySelector('.file-pct').innerText = "DONE";
+            el.querySelector('.file-pct').classList.add('text-emerald-400');
             el.querySelector('.btn-cancel').remove();
             delete activeTransfers[id];
             els.speed.innerText = "0.0 MB/s";
         }
 
-        function removeFileRow(id) {
+        function removeRow(id) {
             const el = document.getElementById(`tx-${id}`);
             if(el) el.remove();
-            // Hide box if empty
-            if(els.fileList.children.length === 0) els.transferBox.classList.add('hidden');
+            delete activeTransfers[id];
+            if(els.fileList.children.length <= 1) els.emptyState.classList.remove('hidden');
             els.speed.innerText = "0.0 MB/s";
-        }
-
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
         function copyCode() {
             navigator.clipboard.writeText(myCode);
-            showToast("ID Copied to Clipboard", 'success');
+            showToast("Code Copied!");
         }
     </script>
 </body>
