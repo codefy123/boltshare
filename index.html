@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlashShare - Instant File Transfer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/streamsaver@2.0.6/StreamSaver.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/web-streams-polyfill@2.0.2/dist/polyfill.min.js"></script>
+
+    <style>
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .progress-bar {
+            transition: width 0.1s linear;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen font-sans">
+
+    <nav class="p-6 border-b border-gray-800 bg-gray-900/80 sticky top-0 z-50 backdrop-blur-md">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2 text-purple-500">
+                <i data-lucide="zap" class="w-8 h-8"></i>
+                <span class="text-2xl font-bold text-white tracking-tighter">FlashShare</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-xs text-gray-400 uppercase tracking-widest hidden sm:block">Your ID:</span>
+                <div class="bg-gray-800 px-4 py-2 rounded-full font-mono text-purple-400 font-bold border border-gray-700 shadow-inner" id="my-id">
+                    Generating...
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto p-6 mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        <div class="glass rounded-3xl p-8 flex flex-col justify-between h-96 relative overflow-hidden group">
+            <div class="absolute top-0 right-0 p-32 bg-purple-600/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+            
+            <div>
+                <h2 class="text-2xl font-bold mb-2 flex items-center gap-2">
+                    <i data-lucide="link" class="w-6 h-6 text-purple-400"></i> Connect
+                </h2>
+                <p class="text-gray-400 text-sm mb-6">Enter your partner's ID to start a secure tunnel.</p>
+                
+                <div class="space-y-4">
+                    <input type="text" id="partner-id" placeholder="Enter Partner ID" 
+                        class="w-full bg-gray-950/50 border border-gray-700 rounded-xl px-4 py-4 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all text-center text-lg tracking-widest font-mono uppercase">
+                    
+                    <button onclick="connectToPeer()" id="connect-btn"
+                        class="w-full bg-white text-black font-bold py-4 rounded-xl hover:bg-gray-200 transition-transform active:scale-95 flex items-center justify-center gap-2">
+                        Connect Now <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <div id="status-indicator" class="flex items-center gap-2 text-yellow-500 bg-yellow-500/10 px-4 py-2 rounded-lg w-fit">
+                    <div class="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                    <span class="text-sm font-medium">Waiting for connection...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass rounded-3xl p-8 flex flex-col justify-center items-center h-96 relative border-dashed border-2 border-gray-700 hover:border-purple-500 transition-colors" id="drop-zone">
+            <input type="file" id="file-input" class="hidden" onchange="handleFileSelect(this)">
+            
+            <div id="upload-ui" class="text-center cursor-pointer" onclick="document.getElementById('file-input').click()">
+                <div class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-gray-700 transition-colors">
+                    <i data-lucide="upload-cloud" class="w-10 h-10 text-purple-500"></i>
+                </div>
+                <h3 class="text-xl font-bold">Send Files</h3>
+                <p class="text-gray-500 text-sm mt-2">Click or Drag & Drop<br>Supports 10GB+</p>
+            </div>
+
+            <div id="transfer-ui" class="hidden w-full space-y-4">
+                <div class="flex items-center gap-4 bg-gray-800 p-4 rounded-xl">
+                    <i data-lucide="file" class="w-8 h-8 text-purple-400"></i>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-bold truncate" id="file-name">movie.mp4</p>
+                        <p class="text-xs text-gray-400" id="file-size">2.4 GB</p>
+                    </div>
+                </div>
+
+                <div class="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
+                    <div id="progress-bar" class="bg-purple-500 h-full w-0 progress-bar"></div>
+                </div>
+                <p class="text-center text-sm font-mono text-purple-300" id="progress-text">0%</p>
+                <p class="text-center text-xs text-gray-500" id="speed-text"></p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- ICONS ---
+        lucide.createIcons();
+
+        // --- GLOBAL VARIABLES ---
+        let peer = null;
+        let conn = null;
+        let myId = "";
+        
+        // DOM Elements
+        const statusEl = document.getElementById('status-indicator');
+        const connectBtn = document.getElementById('connect-btn');
+        const uploadUi = document.getElementById('upload-ui');
+        const transferUi = document.getElementById('transfer-ui');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+
+        // --- 1. INITIALIZE PEER (Get ID) ---
+        // Generates a random 4-character ID for easier typing
+        function generateShortId() {
+            return Math.random().toString(36).substring(2, 6).toUpperCase();
+        }
+
+        function initPeer() {
+            const shortId = generateShortId();
+            // We use the public PeerJS cloud server. 
+            // NOTE: This requires internet to handshake, but data goes P2P.
+            peer = new Peer(shortId);
+
+            peer.on('open', (id) => {
+                myId = id;
+                document.getElementById('my-id').innerText = id;
+            });
+
+            peer.on('connection', (connection) => {
+                conn = connection;
+                setupConnection();
+            });
+
+            peer.on('error', (err) => {
+                console.error(err);
+                alert("Connection Error: " + err.type);
+            });
+        }
+
+        initPeer();
+
+        // --- 2. CONNECT TO PARTNER ---
+        function connectToPeer() {
+            const partnerId = document.getElementById('partner-id').value.toUpperCase().trim();
+            if (!partnerId) return alert("Please enter an ID");
+            
+            conn = peer.connect(partnerId);
+            setupConnection();
+        }
+
+        function setupConnection() {
+            conn.on('open', () => {
+                statusEl.className = "flex items-center gap-2 text-green-400 bg-green-500/10 px-4 py-2 rounded-lg w-fit";
+                statusEl.innerHTML = `<div class="w-2 h-2 bg-green-500 rounded-full"></div> Connected!`;
+                connectBtn.innerText = "Connected";
+                connectBtn.disabled = true;
+                connectBtn.classList.add('opacity-50');
+            });
+
+            conn.on('data', handleData);
+        }
+
+        // --- 3. SEND FILE LOGIC (CHUNKING) ---
+        const CHUNK_SIZE = 16 * 1024; // 16KB chunks to prevent congestion
+
+        async function handleFileSelect(input) {
+            const file = input.files[0];
+            if (!file || !conn) return;
+
+            // Show UI
+            uploadUi.classList.add('hidden');
+            transferUi.classList.remove('hidden');
+            document.getElementById('file-name').innerText = file.name;
+            document.getElementById('file-size').innerText = formatBytes(file.size);
+
+            // 1. Send Metadata
+            conn.send({
+                type: 'header',
+                name: file.name,
+                size: file.size,
+                mime: file.type
+            });
+
+            // 2. Read & Send Chunks
+            let offset = 0;
+            const reader = new FileReader();
+
+            // Internal recursive function to handle backpressure
+            function readNextChunk() {
+                const slice = file.slice(offset, offset + CHUNK_SIZE);
+                reader.readAsArrayBuffer(slice);
+            }
+
+            reader.onload = (e) => {
+                const chunk = e.target.result;
+                
+                // Wait if buffer is full (Backpressure)
+                if (conn.dataChannel.bufferedAmount > 10 * 1024 * 1024) { // 10MB limit
+                    setTimeout(() => {
+                        conn.send(chunk);
+                        processProgress(chunk.byteLength);
+                    }, 50);
+                } else {
+                    conn.send(chunk);
+                    processProgress(chunk.byteLength);
+                }
+            };
+
+            function processProgress(length) {
+                offset += length;
+                const percent = ((offset / file.size) * 100).toFixed(1);
+                progressBar.style.width = percent + '%';
+                progressText.innerText = percent + '%';
+
+                if (offset < file.size) {
+                    readNextChunk();
+                } else {
+                    console.log("File Sent!");
+                }
+            }
+
+            readNextChunk(); // Start loop
+        }
+
+        // --- 4. RECEIVE FILE LOGIC ---
+        let incomingFile = null;
+        let receivedBytes = 0;
+        let fileWriter = null;
+
+        function handleData(data) {
+            // Case A: Metadata (Header)
+            if (data.type === 'header') {
+                incomingFile = data;
+                receivedBytes = 0;
+                
+                // Setup StreamSaver to write directly to disk
+                const fileStream = streamSaver.createWriteStream(data.name, { size: data.size });
+                fileWriter = fileStream.getWriter();
+
+                // Update UI
+                uploadUi.classList.add('hidden');
+                transferUi.classList.remove('hidden');
+                document.getElementById('file-name').innerText = "Receiving: " + data.name;
+                document.getElementById('file-size').innerText = formatBytes(data.size);
+                return;
+            }
+
+            // Case B: File Chunk (ArrayBuffer)
+            if (fileWriter) {
+                // We received raw bytes
+                fileWriter.write(new Uint8Array(data));
+                receivedBytes += data.byteLength;
+
+                // Update Progress
+                const percent = ((receivedBytes / incomingFile.size) * 100).toFixed(1);
+                progressBar.style.width = percent + '%';
+                progressText.innerText = percent + '%';
+
+                // Check Completion
+                if (receivedBytes === incomingFile.size) {
+                    fileWriter.close();
+                    fileWriter = null;
+                    incomingFile = null;
+                    document.getElementById('file-name').innerText = "Download Complete!";
+                    progressBar.classList.add('bg-green-500');
+                }
+            }
+        }
+
+        // Helper: Format Bytes
+        function formatBytes(bytes, decimals = 2) {
+            if (!+bytes) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+        }
+    </script>
+</body>
+</html>
